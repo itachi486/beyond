@@ -1,3 +1,11 @@
+## Final Git delivery result — permission blocker
+
+Implementation commit: `84d955ed7c30a0c13d84c1a7d428be3cde22a0ed` on `main` (48 intended files, including preserved earlier BEYOND animation work). Final local checks: unit9/server16/browser43 passed, typecheck/build/diff checks passed; no lint script exists. Staged path/credential pattern scan found no matching risks. No user files were discarded.
+
+Normal `GIT_TERMINAL_PROMPT=0 git push https://github.com/itachi486/beyond main` was actually attempted and **failed HTTP403**: permission denied to the currently authenticated GitHub account `yukikato123123123-byte`. Public read/empty refs do not imply write access. No push success, deployment or hosted update is claimed. No authentication, remote configuration, repository visibility or permission setting was changed. A follow-up documentation-only commit records this blocker.
+
+Required next action: repository owner grants that account repository write access, or user prepares an already authorized account. Do not generate/expose tokens or switch accounts implicitly. After permission is resolved, inspect `git status`, local `git log`, and remote refs again; if safe use normal `git push https://github.com/itachi486/beyond main`, never force, and verify remote SHA. If new remote commits exist, inspect ancestry and integrate safely before pushing. Deployment remains separately unauthorized.
+
 # Integrated admin + six-world verification — current task
 
 ## Scope and environment

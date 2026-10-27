@@ -1,23 +1,31 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  discoveries,
-  getDiscovery,
-  worlds,
-  type WorldId,
-} from "./data/universe";
+import type { WorldId } from "./data/universe";
+import { useUniverse } from "./features/content/UniverseProvider";
 import { languageOptions, messages, type Locale } from "./locales";
 import { ids, read, remember, write } from "./lib/storage";
 import { Icon } from "./components/Icon";
 import { Overlay } from "./components/Overlay";
 import { SceneBoundary } from "./components/SceneBoundary";
+import { HeroScene } from "./components/HeroScene";
+import { usePortalTravel } from "./hooks/usePortalTravel";
 const WorldScene = lazy(() => import("./worlds/WorldScene"));
+const HubScene = lazy(() => import("./worlds/HubScene"));
 type Panel = "bookmarks" | "history" | "settings" | "worlds" | null;
 export default function App() {
+  const { worlds, discoveries, connections, defaultLanguage } = useUniverse();
+  const getDiscovery = (id: string) =>
+    discoveries.find(
+      (d) => d.id === id || d.slug === id || d.aliases?.includes(id),
+    );
   const location = useLocation(),
     navigate = useNavigate();
   const [locale, setLocale] = useState<Locale>(() =>
-    read("locale", "en", (v): v is Locale => v === "en" || v === "es"),
+    read(
+      "locale",
+      defaultLanguage,
+      (v): v is Locale => v === "en" || v === "es",
+    ),
   );
   const t = messages[locale];
   const [bookmarks, setBookmarks] = useState<string[]>(() =>
@@ -28,16 +36,14 @@ export default function App() {
   );
   const [panel, setPanel] = useState<Panel>(null),
     [tutorial, setTutorial] = useState(false),
-    [transition, setTransition] = useState(false),
     [shared, setShared] = useState("");
   const systemReduce = () =>
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [systemMotion, setSystemMotion] = useState(systemReduce);
   const [reduced, setReduced] = useState(() =>
-    read(
-      "reduced",
-      systemReduce(),
-      (v): v is boolean => typeof v === "boolean",
-    ),
+    // Saved application preference must not latch the initial OS preference.
+    // systemMotion independently follows matchMedia changes in both directions.
+    read("reduced", false, (v): v is boolean => typeof v === "boolean"),
   );
   const [simple, setSimple] = useState(() =>
     read(
@@ -53,9 +59,19 @@ export default function App() {
   const worldSlug = location.pathname.startsWith("/worlds/")
     ? location.pathname.slice(8)
     : null;
-  const world = worlds.find((w) => w.id === (discovery?.worldId || worldSlug));
+  const world = worlds.find(
+    (w) =>
+      w.id === (discovery?.worldId || worldSlug) ||
+      w.slug === worldSlug ||
+      w.aliases?.includes(worldSlug || ""),
+  );
   const home = location.pathname === "/";
-  const invalid = !home && !world;
+  const searchParams = new URLSearchParams(location.search);
+  const hubRoute =
+    location.pathname === "/explore" ||
+    !!world?.hubKey ||
+    searchParams.get("from") === "hub";
+  const invalid = !home && !world && !hubRoute;
   useEffect(() => {
     document.documentElement.lang = locale;
     write("locale", locale);
@@ -74,11 +90,11 @@ export default function App() {
   }, [discovery, locale]);
   useEffect(() => {
     if (
-      world &&
+      (world || hubRoute) &&
       !read("tutorial", false, (v): v is boolean => typeof v === "boolean")
     )
       setTutorial(true);
-  }, [!!world]);
+  }, [!!world || hubRoute]);
   useEffect(() => {
     setShared("");
     setPanel(null);
@@ -86,25 +102,27 @@ export default function App() {
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const change = () => {
-      if (mq.matches) setReduced(true);
+      setSystemMotion(mq.matches);
     };
     mq.addEventListener("change", change);
     return () => mq.removeEventListener("change", change);
   }, []);
+  const motionReduced = reduced || systemMotion;
+  const { active: transition, start: startTravel } = usePortalTravel(
+    navigate,
+    location.key,
+    motionReduced,
+  );
   function travel(id: WorldId) {
-    setPanel(null);
-    setTransition(true);
-    window.setTimeout(
-      () => {
-        navigate("/worlds/" + id);
-        setTransition(false);
-      },
-      reduced ? 0 : 450,
-    );
+    if (startTravel(id)) setPanel(null);
   }
   function open(id: string) {
     setPanel(null);
-    navigate("/discoveries/" + id);
+    navigate(
+      "/discoveries/" +
+        (getDiscovery(id)?.slug || id) +
+        (hubRoute ? "?from=hub" : ""),
+    );
   }
   function toggleBookmark(id: string) {
     setBookmarks((items) => {
@@ -153,7 +171,13 @@ export default function App() {
                   {worlds.find((w) => w.id === d.worldId)!.name[locale]}
                 </small>
                 <strong>{d.title[locale]}</strong>
-                <span>{d.summary[locale]}</span>
+                <span>
+                  {(locale === "en"
+                    ? connections.find(
+                        (c) => c.from_id === discovery?.id && c.to_id === d.id,
+                      )?.explanation
+                    : undefined) || d.summary[locale]}
+                </span>
               </span>
               <Icon name="arrow" />
             </button>
@@ -165,29 +189,43 @@ export default function App() {
     );
   }
   return (
-    <main className={home ? "app threshold" : "app exploring"}>
-      {home && (
-        <div className="hero-art" aria-hidden="true">
-          <div className="hero-haze" />
-          <div className="orbital orbital-one" />
-          <div className="orbital orbital-two" />
-          <div className="stardust" />
-        </div>
-      )}
-      {world && (
-        <SceneBoundary key={world.id} message={t.fallback}>
+    <main
+      className={`${home ? "app threshold" : "app exploring"}${transition ? " entering" : ""}${motionReduced ? " low-motion" : ""}`}
+    >
+      {home && <HeroScene reduced={motionReduced} simple={simple} />}
+      {hubRoute ? (
+        <SceneBoundary key="hub" message={t.fallback}>
           <Suspense fallback={<p className="scene-loading">{t.loading}</p>}>
-            <WorldScene
-              world={world.id}
+            <HubScene
               locale={locale}
               simple={simple}
-              reduced={reduced}
+              reduced={motionReduced}
               blocked={!!(panel || discovery || tutorial)}
-              onSelect={open}
-              onPortal={travel}
+              selected={world?.hubKey ? world.id : searchParams.get("world")}
+              onWorld={(id) => {
+                if (searchParams.get("world") !== id)
+                  navigate("/explore?world=" + id);
+              }}
+              onDiscovery={open}
             />
           </Suspense>
         </SceneBoundary>
+      ) : (
+        world && (
+          <SceneBoundary key={world.id} message={t.fallback}>
+            <Suspense fallback={<p className="scene-loading">{t.loading}</p>}>
+              <WorldScene
+                world={world.id}
+                locale={locale}
+                simple={simple}
+                reduced={motionReduced}
+                blocked={!!(panel || discovery || tutorial)}
+                onSelect={open}
+                onPortal={travel}
+              />
+            </Suspense>
+          </SceneBoundary>
+        )
       )}
       <header
         className="site-header"
@@ -203,21 +241,25 @@ export default function App() {
         <nav aria-label={t.explore}>
           {language}
           <span className="header-divider" />
-          <button
-            className="icon-button"
-            aria-label={t.explore}
-            onClick={() => setPanel("worlds")}
-          >
-            <Icon name="compass" />
-          </button>
-          <button
-            className="icon-button"
-            aria-label={t.bookmarks}
-            onClick={() => setPanel("bookmarks")}
-          >
-            <Icon name="bookmark" />
-            {bookmarks.length > 0 && <i className="dot" />}
-          </button>
+          {!home && (
+            <>
+              <button
+                className="icon-button"
+                aria-label={t.explore}
+                onClick={() => setPanel("worlds")}
+              >
+                <Icon name="compass" />
+              </button>
+              <button
+                className="icon-button"
+                aria-label={t.bookmarks}
+                onClick={() => setPanel("bookmarks")}
+              >
+                <Icon name="bookmark" />
+                {bookmarks.length > 0 && <i className="dot" />}
+              </button>
+            </>
+          )}
           <button
             className="icon-button"
             aria-label={t.menu}
@@ -236,32 +278,22 @@ export default function App() {
             </h1>
             <h2>{t.headline}</h2>
             <p className="hero-support">{t.support}</p>
-            <button className="primary" onClick={() => travel("archive")}>
+            <button
+              className="primary entrance-cta"
+              disabled={transition || !worlds.length}
+              aria-busy={transition}
+              onClick={() => {
+                travel("hub");
+              }}
+            >
               {t.enter}
               <Icon name="arrow" />
             </button>
             <p className="atmosphere">{t.atmosphere}</p>
           </section>
-          <footer className="threshold-footer">
-            <button
-              className="quiet scroll-hint"
-              onClick={() => setPanel("worlds")}
-            >
-              <span className="scroll-icon">↓</span>
-              {t.scroll}
-            </button>
-            <button className="world-pill" onClick={() => setPanel("worlds")}>
-              <span className="world-mini" />
-              <span>
-                <small>{t.current}</small>
-                <strong>{t.outer}</strong>
-              </span>
-              <Icon name="arrow" />
-            </button>
-          </footer>
         </>
       )}
-      {world && !discovery && (
+      {world && !discovery && !hubRoute && (
         <>
           <section className="world-title">
             <p className="eyebrow">
@@ -315,7 +347,14 @@ export default function App() {
         <section className="not-found">
           <p className="eyebrow">BEYOND / 404</p>
           <h1>{t.notfound}</h1>
-          <button className="primary" onClick={() => travel("archive")}>
+          <button
+            className="primary entrance-cta"
+            disabled={transition || !worlds.length}
+            aria-busy={transition}
+            onClick={() => {
+              travel("hub");
+            }}
+          >
             {t.findway}
             <Icon name="arrow" />
           </button>
@@ -326,14 +365,46 @@ export default function App() {
           toolbar={language}
           title={t.panel}
           closeLabel={t.close}
-          onClose={() => navigate("/worlds/" + discovery.worldId)}
+          onClose={() =>
+            navigate(
+              hubRoute
+                ? "/explore?world=" + discovery.worldId
+                : "/worlds/" + discovery.worldId,
+            )
+          }
         >
           <article className="discovery">
             <p className="eyebrow category">
               {discovery.category[locale]} /{" "}
               {discovery.contentType === "question" ? t.notKnown : t.original}
             </p>
+            <p className="discovery-classification">
+              {locale === "es"
+                ? {
+                    factual: "Contenido factual",
+                    hypothesis: "Hipótesis",
+                    fictional: "Escenario ficticio",
+                  }[discovery.truthType || "factual"]
+                : {
+                    factual: "Factual content",
+                    hypothesis: "Hypothesis",
+                    fictional: "Fictional scenario",
+                  }[discovery.truthType || "factual"]}{" "}
+              ·{" "}
+              {discovery.verificationStatus === "verified"
+                ? locale === "es"
+                  ? "Revisado por un editor"
+                  : "Editor reviewed"
+                : discovery.verificationStatus === "hypothetical"
+                  ? locale === "es"
+                    ? "No es un hecho establecido"
+                    : "Not established fact"
+                  : locale === "es"
+                    ? "Requiere revisión"
+                    : "Requires review"}
+            </p>
             <h1>{discovery.title[locale]}</h1>
+            {discovery.uncertainty && <p>{discovery.uncertainty}</p>}
             <p className="lead">{discovery.summary[locale]}</p>
             <div
               className={"article-visual " + discovery.worldId}
@@ -342,9 +413,36 @@ export default function App() {
               <span>✧</span>
               <div className="article-ring" />
             </div>
+            {discovery.media && (
+              <img
+                className="discovery-media"
+                src={discovery.media}
+                alt={discovery.title[locale]}
+              />
+            )}
             {discovery.body.map((p, i) => (
               <p key={i}>{p[locale]}</p>
             ))}
+            {(
+              [
+                ["evidence", locale === "es" ? "Observaciones" : "Evidence"],
+                [
+                  "interpretation",
+                  locale === "es" ? "Interpretación" : "Interpretation",
+                ],
+                [
+                  "questions",
+                  locale === "es" ? "Preguntas abiertas" : "Open questions",
+                ],
+              ] as const
+            ).map(([key, label]) =>
+              discovery[key] ? (
+                <section key={key}>
+                  <h2>{label}</h2>
+                  <p>{discovery[key]}</p>
+                </section>
+              ) : null,
+            )}
             <div className="article-actions">
               <button
                 onClick={() => toggleBookmark(discovery.id)}
@@ -387,7 +485,7 @@ export default function App() {
           </article>
         </Overlay>
       )}
-      {tutorial && world && (
+      {tutorial && (world || hubRoute) && (
         <Overlay
           toolbar={language}
           title={t.tutorial}
@@ -421,7 +519,7 @@ export default function App() {
           </div>
         </Overlay>
       )}
-      {panel && (
+      {panel && (panel !== "worlds" || !home) && (
         <Overlay
           toolbar={language}
           title={
@@ -460,7 +558,8 @@ export default function App() {
               <label>
                 <input
                   type="checkbox"
-                  checked={reduced}
+                  checked={motionReduced}
+                  disabled={systemMotion}
                   onChange={(e) => {
                     setReduced(e.target.checked);
                     write("reduced", e.target.checked);
@@ -468,6 +567,7 @@ export default function App() {
                 />
                 {t.reduce}
               </label>
+              {systemMotion && <p className="muted">{t.motionSystem}</p>}
               <label>
                 <input
                   type="checkbox"
@@ -479,18 +579,22 @@ export default function App() {
                 />
                 {t.quality}
               </label>
-              <button onClick={() => setPanel("history")}>
-                <Icon name="trail" />
-                {t.history}
-              </button>
-              <button
-                onClick={() => {
-                  setPanel(null);
-                  navigate("/");
-                }}
-              >
-                {t.home}
-              </button>
+              {!home && (
+                <>
+                  <button onClick={() => setPanel("history")}>
+                    <Icon name="trail" />
+                    {t.history}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPanel(null);
+                      navigate("/");
+                    }}
+                  >
+                    {t.home}
+                  </button>
+                </>
+              )}
               <p className="muted">{t.privacy}</p>
               <p className="muted">{t.fiction}</p>
             </div>
@@ -508,7 +612,7 @@ export default function App() {
           )}
         </Overlay>
       )}
-      {transition && (
+      {transition && !home && (
         <div className="portal-transition" role="status">
           <span />
           {t.loading}

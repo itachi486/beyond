@@ -1,0 +1,25 @@
+.content-loading {
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  padding: 24px;
+  background: #080d20;
+  color: #e9edfa;
+}
+.content-loading h1 {
+  font: 45px Georgia;
+  letter-spacing: 0.2em;
+}
+.content-loading p {
+  font-size: 14px;
+  color: #b1bdd6;
+  line-height: 1.7;
+}
+.content-loading button {
+  padding: 12px 25px;
+  border: 1px solid #e6c58b;
+  border-radius: 25px;
+  color: #e6c58b;
+}

@@ -18,8 +18,19 @@ test("English threshold enters real 3D, worlds and discovery connections", async
     }),
   ).toBeVisible();
   await page.getByRole("button", { name: "ENTER THE UNKNOWN" }).click();
-  await expect(page).toHaveURL(/worlds\/archive/);
+  await expect(page).toHaveURL(/explore/);
   await dismiss(page);
+  await expect(
+    page.getByRole("heading", {
+      name: "Six worlds. Unexpected connections.",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Explore", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /The Archive/ })
+    .click();
   await expect(page.locator("canvas")).toBeVisible();
   await page
     .getByRole("button", { name: /01.*A day longer than a year/ })
@@ -154,7 +165,10 @@ for (const width of [375, 768, 1440])
       .getByRole("button", { name: "Comenzar a explorar", exact: true })
       .click();
     await expect(
-      page.getByRole("heading", { name: "El Archivo", exact: true }),
+      page.getByRole("heading", {
+        name: "Seis mundos. Nuevas conexiones.",
+        exact: true,
+      }),
     ).toBeVisible();
     expect(
       await page.evaluate(
@@ -211,7 +225,7 @@ test("unknown destination is recoverable and unsupported languages are honest", 
     "",
   );
   await page.getByRole("button", { name: "Find another path" }).click();
-  await expect(page).toHaveURL(/worlds\/archive/);
+  await expect(page).toHaveURL(/explore/);
 });
 test("raycast discovery and world portals work on the actual canvas", async ({
   page,

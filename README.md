@@ -1,87 +1,80 @@
 # BEYOND — The Internet Within the Internet
 
-A browser-local discovery universe built from scratch in `internet_project/beyond`. The neighboring Jalisco/NopaHua project is not used or modified. No account, paid API, backend, tracking, or cloud database is required.
+A public discovery universe and private editorial workspace in one React/TypeScript/Vite/Three.js project. Node and SQLite provide real shared persistence; no paid service or visitor account is required. The neighboring Jalisco/NopaHua project is not used.
 
-## Run
+Read [AGENTS.md](AGENTS.md), [STATUS.md](STATUS.md), [NEXT_SESSION.md](NEXT_SESSION.md), [DESIGN.md](DESIGN.md), [DECISIONS.md](DECISIONS.md) and [VERIFICATION.md](VERIFICATION.md) for current decisions and evidence. Older entries are explicitly historical.
 
-Requires Node **22.12+** (tested 22.23.2) and npm.
+## Local setup
+
+Requires **Node 22.23+** (tested 22.23.2) with `node:sqlite`, currently experimental in Node 22, and npm. Use the lockfile on a fresh checkout:
 
 ```sh
-cd /home/administrator/internet_project/beyond
 npm ci
 npm run dev
 ```
 
-Open the URL Vite prints (normally http://localhost:5173).
+Open http://localhost:5173. Vite dev and preview mount the same local API. On first API access SQLite creates schema/seed version 1 and six-world migration version 2 idempotently. Default storage is `.local/beyond.sqlite` (ignored), with restrictive directory/file permissions. Back up the database and its WAL consistently before future migrations. Never commit local DBs, credentials or `.env`.
+
+Create the first editor manually in a separate terminal:
+
+```sh
+npm run admin:setup -- your-email@example.com
+```
+
+Enter a unique password at the hidden terminal prompt (minimum 12 characters). No default credential or public admin signup exists. The command refuses to create another initial admin once one exists. It does not print the password. Visit `/admin/login`; protected `/admin` redirects there when unauthenticated. Password changes require the current password and revoke existing sessions. There is no email reset/multi-admin invitation implementation yet. No real operator account was created by this task.
+
+Optional `.env` configuration is described by `.env.example`: `BEYOND_DB_PATH` selects persistent storage, `APP_ORIGIN` selects the exact allowed origin. Neither uses a `VITE_` client prefix. With no explicit origin, development accepts the current localhost/127.0.0.1 port. Restart after changing environment configuration. A different database path starts a distinct store; configure the same path for setup and serving.
+
+## Build and serve
 
 ```sh
 npm run typecheck
 npm test
+npm run test:server
 npm run build
 npm run preview
 ```
 
-Browser tests use Playwright Chromium:
+`npm start` serves `dist` and APIs through the Node server on loopback port 4173. For a future production host, place it behind a TLS reverse proxy, supply a persistent backed-up volume and set the exact HTTPS origin:
 
 ```sh
-npx playwright install chromium
+NODE_ENV=production APP_ORIGIN=https://your-real-domain.example PORT=4173 npm start
+```
+
+This is an illustrative operator command, **not a deployment performed by this task**. Production uses Secure `__Host-` cookies; HTTPS is mandatory. The old `.openai/hosting.json` static Sites manifest is preserved but cannot host this new SQLite backend on its own. No hosting/authentication settings were changed or deployment performed.
+
+## Public exploration
+
+The animated landing retains one **ENTER THE UNKNOWN** action, now entering `/explore`. The second screen is one continuous procedural Three.js scene: six persisted destinations around a compass terrace with actual connecting walkways. Golden branching arches, a crystal sphere, moonlit ruins, a garden/waterfall, a luminous future city and a library/orb interpret the reference composition. This is **stylized procedural geometry, not a photorealistic replica or a flattened reference image**.
+
+WASD/arrows and touch controls move; drag looks; clicking/tapping destinations or keyboard-accessible destination buttons moves along paths. Manual movement interrupts automatic travel without forced rotation. Near a destination, contextual hints and a discovery list appear. Published discovery markers use local coordinates and open the same content panel as the accessible list. Closing a panel preserves the scene/camera position. Reduced motion removes ambient movement and uses immediate deliberate destination changes. WebGL failure leaves accessible destination/content controls.
+
+The original four worlds, eight discoveries, direct world/discovery routes, portals, bookmarks, history, sharing and EN/ES remain. Only six `hubKey` destinations inhabit the new hub; legacy worlds remain separate accessible routes. Personal collections remain browser-local `beyond:v1:*` data. Public/admin content comes from `/api/public/universe` and the same SQLite records; no disconnected admin array or silent bundled fallback is used. Focus refresh updates content after edits; world switching does not refetch per click.
+
+## Editorial model and security
+
+Worlds support stable IDs, slug aliases, publication states, theme/color/order and bounded hub placement for the six supported scene motifs. This is not a general 3D scene editor. Discoveries support EN/optional ES content, structured paragraphs, evidence/interpretation/questions, described HTTPS sources, source review, factual/hypothesis/fictional classification, uncertainty, publication states, coordinates and revisions. Hub discoveries use local X/Z ±4 and Y 0–6; the visible marker is elevated above the island surface. The scene caps markers at 24 per destination; the accessible list still exposes all eligible records.
+
+Only authorized editorial actions can verify. New factual publication requires verification and sources; hypothetical/fictional content requires explicit hypothetical status and uncertainty. Rejected/draft/archived content is excluded publicly. The eight originally public discoveries remain visible **labelled Requires review**, not falsely verified; changing their claims/sources or unpublishing removes this grandfathered visibility. Six new hub destinations contain no fabricated published discoveries, so initially show honest empty states. Initial admin totals are 11 worlds (6 hub + 4 legacy + 1 draft Signal) and 9 discoveries (8 legacy published + 1 editorial draft); public totals are 10 worlds/8 discoveries. Counts change with real edits.
+
+Relationships reference real stable IDs, reject duplicates/self-links, preserve editorial explanation and revisions. Archive/unpublish substitutes for destructive content deletion. Slug aliases preserve old links. Optimistic versions reject concurrent stale updates. Lists search/filter/paginate by 10.
+
+Passwords use native scrypt; sessions are random, server-stored as hashes, expire after 8 hours, and use HttpOnly/SameSite Strict cookies. All admin endpoints recheck authorization. Mutations require exact origin, JSON and a session CSRF token. Login has persisted account/IP rate limits. Body limits, safe URLs and escaped text are enforced. No AI question engine, biometric authentication, external identity provider or fake verification is implemented.
+
+## Browser verification
+
+```sh
 npm run test:browser
 ```
 
-On this particular Linux host Chromium needs the existing library bundle:
-`LD_LIBRARY_PATH=/tmp/jalisco-browser-libs/extracted/usr/lib/x86_64-linux-gnu npm run test:browser`.
-This host-specific prefix is not needed on a normally configured computer.
+Use an installed Playwright Chromium. This particular host requires:
 
-## Experience
+```sh
+LD_LIBRARY_PATH=/tmp/jalisco-browser-libs/extracted/usr/lib/x86_64-linux-gnu npm run test:browser
+```
 
-The threshold uses a **new generated, text-free environment painting** as one background layer, live HTML typography, controls, moving star layers and orbital accents. It does not display the supplied screenshot as the application. The original reference remains untouched in the parent directory. The generated background is optimized to a local ~367KB WebP.
+Server/admin tests create disposable databases and generated fixture credentials, never real accounts. See VERIFICATION.md for actual results, screenshot evidence and limitations. Physical devices, the user's Google Chrome profile, production TLS proxy and live deployment are not verified by these local tests.
 
-Enter the Unknown lazy-loads a genuine Three.js scene. Four data-driven worlds have different structures: an architectural Archive, rock-spire Elsewhere, fragmented crystalline Unsolved, and a forest-and-water Natural World. All have procedural floating terrain, portals, a celestial sky, stars, distant landmarks and mist. The exploration scene is a **stylized procedural environment**, not a photorealistic reconstruction of every architectural detail in the reference.
+## Git delivery
 
-- Drag with a mouse or touch to look; WASD/arrows or the movement pad move.
-- Camera orientation never rotates automatically. Reduced motion disables environmental floating/pulsing. Movement remains directly controlled.
-- Click a luminous landmark to open a discovery; click a colored portal to travel to another world. World buttons provide an equivalent keyboard-accessible route.
-- Nearby cards provide accessible alternatives to canvas picking.
-- Only authored same-world content relationships produce spatial connection lines. Detail panels include explicit cross-world related discoveries.
-- Escape closes overlays; focus remains within active dialogs. Settings offer simplified rendering and reduced motion.
-- Bookmarks, visit history, tutorial dismissal, language, and display settings use versioned `beyond:v1:*` localStorage. Malformed data and unavailable storage are handled safely. Storage clearing/private browser sessions can remove this local data; there is no server backup.
-- Every discovery has a direct `/discoveries/:slug` URL. Back/forward work through React Router. Clipboard sharing uses the current stable URL, with a manual-copy message when permission is unavailable.
-- WebGL initialization, context loss or scene-module errors leave all discovery content and navigation usable in a 2D alternative.
-
-## Content and languages
-
-Eight curated discoveries, two in each world, include Venusian time, exoplanets, Socotra, Cappadocia, dark matter, Enceladus, coral reefs and auroras. Body copy is locally bundled; no runtime content requests. Each entry cites a NASA, NOAA or UNESCO source inspected during implementation. Summaries are original paraphrases. The environments are explicitly fictional; scientific uncertainty is labeled, and no extraterrestrial life is claimed.
-
-**English and Spanish are fully available** for interface and all eight discoveries. Japanese, Korean, French, Simplified Chinese and Traditional Chinese appear disabled and marked upcoming. They are not advertised as translated. No external translation API is used. Switching language retains routes, selection, local collections and the current 3D camera.
-
-## Architecture
-
-- `src/App.tsx`: routes, navigation, threshold, collections and discovery panels.
-- `src/components/`: accessible overlay, icons, scene error boundary.
-- `src/worlds/engine.ts`: procedural geometry, lighting, sky, raycasting, pointer/keyboard controls and resource disposal.
-- `src/worlds/WorldScene.tsx`: React lifecycle bridge, loading/failure states and movement pad. Three.js is lazy loaded separately from the first screen.
-- `src/data/universe.ts`: typed worlds and content, stable IDs, positions, relationships, sources and metadata.
-- `src/locales/index.ts`: typed English/Spanish catalog and honest language availability.
-- `src/lib/storage.ts`: versioned, validated local persistence.
-- `src/styles.css`: color/spacing tokens, responsive composition, accessible focus and reduced-motion styles.
-- `src/tests/`: content graph, localization and storage unit tests.
-- `tests/`: actual browser interaction tests.
-
-Three.js is used directly, avoiding the additional React Three Fiber/Drei dependencies for this modest scene. The engine mutates camera transforms outside React and caps pixel ratio, particles and geometry for practical rendering. Settings can rebuild the scene; normal locale or panel changes do not. Resize observers, animation frames, GPU materials/geometries/textures and listeners are cleaned up on unmount. Rendering skips hidden tabs. The 3D module is ~125KB gzip, loaded after entering.
-
-## Extend
-
-1. Add a `Discovery` to `src/data/universe.ts`: unique stable `id`/`slug`, both localized titles/summaries/body, category, world ID, position, valid related IDs, source URLs, content type, explicit fiction label, share image and creation date. Verify factual sources before adding claims.
-2. Add a world to the `WorldId` type and `worlds` array, a sky/background palette and a distinct structure style in `engine.ts`. Do not add empty destinations.
-3. Add a language catalog conforming to the English message shape, translate all discovery fields, then enable that language in `languageOptions`. Extend the `Locale` union and storage validation only when the full catalog is ready.
-4. Run all checks and browser tests, including direct URLs and fallback mode.
-
-## Static hosting
-
-`npm run build` produces `dist/`. Serve it over HTTP, with **all non-file routes falling back to `index.html`**. React Router direct discovery/world URLs require this SPA fallback. Vite dev/preview and the attached Sites static hosting supply it. Other hosts must configure their own rewrite. `public/_redirects` is provided for hosts supporting that format; it is not universally recognized. Do not open `dist/index.html` via `file://`.
-
-The `.openai/hosting.json` manifest describes a separate private BEYOND Site. It has no connection to the NopaHua staging Worker or its credentials, databases, authentication or deployment settings.
-
-## Verification boundaries
-
-See `VERIFICATION.md` for commands and actual results. Browser QA uses headless Chromium with software WebGL. This proves functionality, not frame rate on every phone or support in every browser. No physical-device or Safari testing is claimed. There is no audio, multiplayer, user-generated content or AI content service. Eight short discoveries are a curated MVP, not an exhaustive encyclopedia.
+Intended existing repository: https://github.com/itachi486/beyond. Local branch is `main`; no remote configuration was changed. Remote read succeeded with an empty ref list and the public repository displayed Quick setup during this task. Delivery must use a normal push to that verified URL, rechecking refs first; never force. Final commit/push evidence is reported only after successful commands. A GitHub push is not a deployment.

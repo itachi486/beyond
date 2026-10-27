@@ -9,7 +9,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:browser": "playwright test",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "start": "node --env-file-if-exists=.env server/index.mjs",
+    "admin:setup": "node --env-file-if-exists=.env server/setup-admin.mjs",
+    "test:server": "node --test server/tests/*.test.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",

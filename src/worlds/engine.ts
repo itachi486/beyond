@@ -1,7 +1,8 @@
 import * as T from "three";
-import { discoveries, worlds, type WorldId } from "../data/universe";
+import type { Discovery, World, WorldId } from "../data/universe";
 export interface EngineOptions {
   world: WorldId;
+  catalog: { worlds: World[]; discoveries: Discovery[] };
   simple: boolean;
   reduced: boolean;
   onSelect: (id: string) => void;
@@ -11,16 +12,22 @@ export interface EngineOptions {
   onPosition: (x: number, z: number) => void;
 }
 export function createUniverse(host: HTMLDivElement, options: EngineOptions) {
+  const { worlds, discoveries } = options.catalog;
   const scene = new T.Scene();
   const world = worlds.find((w) => w.id === options.world)!;
-  const colors = {
+  const style =
+    world.theme ||
+    (["archive", "elsewhere", "unsolved", "natural"].includes(world.id)
+      ? world.id
+      : "unsolved");
+  const colors: Record<string, number> = {
     archive: 0x10182e,
     elsewhere: 0x21172f,
     unsolved: 0x0b1431,
     natural: 0x08282b,
   };
-  scene.background = new T.Color(colors[options.world]);
-  scene.fog = new T.FogExp2(colors[options.world], 0.009);
+  scene.background = new T.Color(colors[style]);
+  scene.fog = new T.FogExp2(colors[style], 0.009);
   const renderer = new T.WebGLRenderer({
     antialias: !options.simple,
     alpha: false,
@@ -247,7 +254,7 @@ export function createUniverse(host: HTMLDivElement, options: EngineOptions) {
     return g;
   }
   // Arrival island and traveler-scale architecture, plus distant layered silhouettes.
-  island(0, -4, 17, 6, options.world, 0);
+  island(0, -4, 17, 6, style, 0);
   for (let i = 0; i < 14; i++) {
     const a = i * 2.399;
     island(
@@ -255,14 +262,14 @@ export function createUniverse(host: HTMLDivElement, options: EngineOptions) {
       -7 + (i % 5) * 3,
       -35 - i * 9,
       2 + (i % 4),
-      options.world,
+      style,
       i,
     );
   }
   const current = discoveries.filter((d) => d.worldId === options.world);
   for (const [i, d] of current.entries()) {
     const [x, y, z] = d.position;
-    const g = island(x, y, z, 4, options.world, i);
+    const g = island(x, y, z, 4, style, i);
     const ring = new T.Mesh(
       new T.TorusGeometry(1.55, 0.09, 8, 56),
       new T.MeshBasicMaterial({ color: world.color }),
@@ -290,7 +297,7 @@ export function createUniverse(host: HTMLDivElement, options: EngineOptions) {
   portals.forEach((w, i) => {
     const x = (i - 1) * 17,
       z = -37 - Math.abs(i - 1) * 4;
-    const g = island(x, -1, z, 2.8, w.id, i + 4);
+    const g = island(x, -1, z, 2.8, w.theme || w.id, i + 4);
     const arch = new T.Mesh(
       new T.TorusGeometry(2, 0.16, 8, 64),
       new T.MeshStandardMaterial({
@@ -373,7 +380,7 @@ export function createUniverse(host: HTMLDivElement, options: EngineOptions) {
   );
   const planet = mesh(
     new T.SphereGeometry(19, 24, 20),
-    options.world === "natural" ? 0x2e6976 : 0x374d82,
+    style === "natural" ? 0x2e6976 : 0x374d82,
     -85,
     52,
     -180,

@@ -1,0 +1,237 @@
+.hub-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  touch-action: none;
+}
+.hub-canvas canvas {
+  display: block;
+}
+.hub-title {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  width: min(600px, 90%);
+  animation: copy-arrive 0.8s ease-out both;
+}
+.hub-title > p {
+  font: 22px Georgia;
+  letter-spacing: 0.16em;
+  color: #e6c58b;
+  margin: 0 0 12px;
+}
+.hub-title h1 {
+  font: 15px Georgia;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+  color: #bdcbe2;
+  margin: 0;
+}
+.hub-destinations {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1120px, calc(100% - 50px));
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 2;
+}
+.hub-destinations button {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 1px solid #ffffff20;
+  border-radius: 24px;
+  background: #081021bb;
+  backdrop-filter: blur(8px);
+}
+.hub-destinations button[aria-current] {
+  color: #e6c58b;
+  border-color: #e6c58b88;
+}
+.hub-destinations i {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.hub-context {
+  position: absolute;
+  left: var(--space);
+  bottom: 155px;
+  width: 260px;
+  z-index: 3;
+  background: linear-gradient(110deg, #0b172be6, #0b172b80);
+  border-left: 1px solid #e6c58b88;
+  padding: 20px;
+  backdrop-filter: blur(9px);
+  animation: copy-arrive 0.4s ease-out both;
+}
+.hub-context > span {
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: #e6c58b;
+}
+.hub-context h2 {
+  font: 25px Georgia;
+  font-weight: 400;
+  margin: 12px 0;
+}
+.hub-context p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #c1cde1;
+}
+.hub-context .hub-empty {
+  font-size: 11px;
+  color: #9ba7c4;
+}
+.hub-context button {
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 0 0;
+  border-top: 1px solid #ffffff22;
+}
+.hub-coordinates {
+  position: absolute;
+  right: var(--space);
+  top: 145px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #9ba7c4;
+}
+.hub-reset {
+  position: absolute;
+  right: var(--space);
+  top: 173px;
+  font-size: 10px;
+  color: #b1bdd6;
+}
+.hub-movement {
+  bottom: 90px;
+}
+.hub-fallback {
+  position: absolute;
+  left: var(--space);
+  top: 220px;
+  right: var(--space);
+  max-width: 600px;
+  color: #e6c58b;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.hub-discovery {
+  display: block;
+  text-align: left;
+  width: 100%;
+  border-bottom: 1px solid #ffffff22;
+  padding: 22px 0;
+}
+.hub-discovery strong {
+  font: 24px Georgia;
+  display: block;
+  margin-bottom: 12px;
+}
+.hub-discovery span {
+  font-size: 13px;
+  color: #b1bdd6;
+  line-height: 1.7;
+}
+.discovery-classification {
+  font-size: 11px !important;
+  color: #e6c58b !important;
+  border-left: 1px solid #e6c58b77;
+  padding-left: 12px;
+}
+.hub-context,
+.hub-discovery {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .hub-destinations {
+    flex-wrap: wrap;
+    max-width: 650px;
+  }
+  .hub-context {
+    bottom: 160px;
+  }
+  .hub-movement {
+    bottom: 115px;
+  }
+  .hub-title > p {
+    font-size: 19px;
+  }
+}
+@media (max-width: 600px) {
+  .hub-title {
+    top: 95px;
+    width: 94%;
+  }
+  .hub-title > p {
+    font-size: 16px;
+    letter-spacing: 0.1em;
+  }
+  .hub-title h1 {
+    font-size: 12px;
+  }
+  .hub-destinations {
+    bottom: 17px;
+    width: calc(100% - 32px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .hub-destinations button {
+    font-size: 8px;
+    padding: 8px;
+    min-height: 40px;
+  }
+  .hub-context {
+    left: 18px;
+    bottom: 172px;
+    width: min(255px, calc(100% - 36px));
+    padding: 14px;
+  }
+  .hub-context h2 {
+    font-size: 21px;
+    margin: 8px 0;
+  }
+  .hub-context p {
+    font-size: 11px;
+    margin: 8px 0;
+  }
+  .hub-coordinates {
+    top: 166px;
+    right: 20px;
+  }
+  .hub-reset {
+    top: 187px;
+    right: 20px;
+    font-size: 9px;
+  }
+  .hub-movement {
+    left: auto;
+    right: 18px;
+    bottom: 330px;
+    grid-template-columns: repeat(3, 32px);
+  }
+  .hub-movement button {
+    height: 32px;
+  }
+  .hub-fallback {
+    top: 220px;
+    font-size: 12px;
+  }
+}

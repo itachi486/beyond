@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { Icon } from "./Icon";
 export function Overlay({
   title,
@@ -16,7 +16,7 @@ export function Overlay({
   const box = useRef<HTMLElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
-  useEffect(() => {
+  useLayoutEffect(() => {
     const old = document.activeElement as HTMLElement | null;
     box.current?.focus();
     const key = (e: KeyboardEvent) => {

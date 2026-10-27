@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createUniverse } from "./engine";
 import type { WorldId } from "../data/universe";
+import { useUniverse } from "../features/content/UniverseProvider";
 import { messages, type Locale } from "../locales";
 export default function WorldScene({
   world,
@@ -19,6 +20,7 @@ export default function WorldScene({
   onSelect: (id: string) => void;
   onPortal: (id: WorldId) => void;
 }) {
+  const catalog = useUniverse();
   const host = useRef<HTMLDivElement>(null),
     engine = useRef<ReturnType<typeof createUniverse> | null>(null);
   const [failed, setFailed] = useState(false),
@@ -34,6 +36,7 @@ export default function WorldScene({
     try {
       engine.current = createUniverse(host.current, {
         world,
+        catalog,
         simple,
         reduced,
         onSelect: (id) => callbacks.current.onSelect(id),
@@ -49,7 +52,7 @@ export default function WorldScene({
       engine.current?.dispose();
       engine.current = null;
     };
-  }, [world, simple, reduced]);
+  }, [world, simple, reduced, catalog]);
   useEffect(() => {
     engine.current?.pause(blocked);
   }, [blocked]);

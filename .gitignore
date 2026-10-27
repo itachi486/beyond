@@ -4,3 +4,11 @@ test-results/
 playwright-report/
 .env*
 .DS_Store
+
+# Local server state, credentials and SQLite sidecars
+.local/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+!.env.example

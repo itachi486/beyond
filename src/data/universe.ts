@@ -1,4 +1,18 @@
-export type WorldId = "archive" | "elsewhere" | "unsolved" | "natural";
+export type WorldStyle = "archive" | "elsewhere" | "unsolved" | "natural";
+export type WorldId = string;
+export interface World {
+  id: WorldId;
+  slug?: string;
+  aliases?: string[];
+  name: Localized;
+  description: Localized;
+  color: string;
+  symbol: string;
+  theme?: WorldStyle;
+  order?: number;
+  hubKey?: string;
+  hubPosition?: [number, number, number];
+}
 export type Localized = { en: string; es: string };
 export interface Discovery {
   id: string;
@@ -12,9 +26,18 @@ export interface Discovery {
   relatedIds: string[];
   sourceUrls: string[];
   contentType: "article" | "question";
-  fictionLabel: false;
+  fictionLabel: boolean;
+  truthType?: "factual" | "hypothesis" | "fictional";
+  verificationStatus?: string;
+  uncertainty?: string;
+  sources?: { url: string; description: string; verification: string }[];
   shareImage: string;
   createdAt: string;
+  aliases?: string[];
+  evidence?: string;
+  interpretation?: string;
+  questions?: string;
+  media?: string;
 }
 export const worlds: {
   id: WorldId;

@@ -323,7 +323,9 @@ async function listRecords(db:D1Database,table:"worlds"|"discoveries",params:URL
     if(!admin||!(await verifyPassword(input.currentPassword,admin.password_hash)))fail(400,"Current password is incorrect.");
     if(!passwordPolicy(input.newPassword))fail(400,"Use a password of at least 12 characters and at most 256 bytes.");
     const next=await hashPassword(input.newPassword);
-    await env.DB.prepare("UPDATE admins SET password_hash=? WHERE id=?").bind(next,session.admin_id).run();
+    const changed=await env.DB.prepare("UPDATE admins SET password_hash=? WHERE id=? AND password_hash=?")
+      .bind(next,session.admin_id,admin.password_hash).run();
+    if(changed.meta.changes!==1)fail(409,"Credentials changed during this request. Sign in again.");
     await env.DB.prepare("DELETE FROM sessions WHERE admin_id=?").bind(session.admin_id).run();
     const created=await createSession(env.DB,session.admin_id);
     return json({ok:true},200,{"Set-Cookie":cookie(created.token,Math.floor(SESSION_TTL/1000))});

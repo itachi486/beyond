@@ -254,8 +254,8 @@ async function getItem(db:D1Database,table:"worlds"|"discoveries",id:string) {
   return parseRow(row);
 }
 async function writeRevision(db:D1Database,kind:string,id:string,actor:string,snapshot:any) {
-  return db.prepare("INSERT INTO revisions(kind,record_id,actor,snapshot,created_at) VALUES(?,?,?,?,?)")
-    .bind(kind,id,actor,JSON.stringify(snapshot),new Date().toISOString());
+  return db.prepare("INSERT INTO revisions(kind,record_id,actor,snapshot,created_at) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM worlds WHERE id=? AND version=?) OR EXISTS (SELECT 1 FROM discoveries WHERE id=? AND version=?)")
+    .bind(kind,id,actor,JSON.stringify(snapshot),new Date().toISOString(),id,snapshot.version??-1,id,snapshot.version??-1);
 }
 async function listRecords(db:D1Database,table:"worlds"|"discoveries",params:URLSearchParams) {
   const all=await allRows(db,table),search=(params.get("search")||"").toLowerCase(),
@@ -400,12 +400,14 @@ async function listRecords(db:D1Database,table:"worlds"|"discoveries",params:URL
     if(method==="PUT") {
       if(typeof input.explanation!=="string"||!input.explanation.trim()||input.explanation.length>1000)
         fail(400,"Explain this connection in 1–1000 characters.");
-      await env.DB.batch([await writeRevision(env.DB,"connections",old.id,session.admin_id,old),
+      await env.DB.batch([env.DB.prepare("INSERT INTO revisions(kind,record_id,actor,snapshot,created_at) VALUES(?,?,?,?,?)")
+        .bind("connections",old.id,session.admin_id,JSON.stringify(old),new Date().toISOString()),
         env.DB.prepare("UPDATE connections SET explanation=? WHERE id=?").bind(input.explanation.trim(),old.id)]);
       return json({ok:true});
     }
     if(method==="DELETE") {
-      await env.DB.batch([await writeRevision(env.DB,"connections",old.id,session.admin_id,old),
+      await env.DB.batch([env.DB.prepare("INSERT INTO revisions(kind,record_id,actor,snapshot,created_at) VALUES(?,?,?,?,?)")
+        .bind("connections",old.id,session.admin_id,JSON.stringify(old),new Date().toISOString()),
         env.DB.prepare("DELETE FROM connections WHERE id=?").bind(old.id)]);
       return json({ok:true});
     }

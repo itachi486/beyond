@@ -43,6 +43,10 @@ NODE_ENV=production APP_ORIGIN=https://your-real-domain.example PORT=4173 npm st
 
 This is an illustrative operator command, **not a deployment performed by this task**. Production uses Secure `__Host-` cookies; HTTPS is mandatory. The old `.openai/hosting.json` static Sites manifest is preserved but cannot host this new SQLite backend on its own. No hosting/authentication settings were changed or deployment performed.
 
+## Cloudflare migration (in progress)
+
+A staged Workers + D1 migration foundation is maintained on `feature/cloudflare-workers-d1`. See [CLOUDFLARE_MIGRATION.md](CLOUDFLARE_MIGRATION.md) for setup, data export, and deployment steps. The first stage serves the public universe API from D1; administrator API migration and end-to-end verification are not yet complete. Do not switch production traffic until the full admin API is ported and tested.
+
 ## Public exploration
 
 The animated landing retains one **ENTER THE UNKNOWN** action, now entering `/explore`. The second screen is one continuous procedural Three.js scene: six persisted destinations around a compass terrace with actual connecting walkways. Golden branching arches, a crystal sphere, moonlit ruins, a garden/waterfall, a luminous future city and a library/orb interpret the reference composition. This is **stylized procedural geometry, not a photorealistic replica or a flattened reference image**.

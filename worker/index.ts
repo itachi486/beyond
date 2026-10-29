@@ -75,6 +75,12 @@ function unb64(value:string):Uint8Array {
   return Uint8Array.from(raw,c=>c.charCodeAt(0));
 }
 function randomToken():string { const a=new Uint8Array(32); crypto.getRandomValues(a); return b64(a); }
+function constantTimeEqual(a:string,b:string):boolean {
+  const x=encoder.encode(a),y=encoder.encode(b);
+  let diff=x.length^y.length;
+  for(let i=0;i<Math.max(x.length,y.length);i++)diff|=(x[i%x.length]||0)^(y[i%y.length]||0);
+  return diff===0;
+}
 async function sha256(value:string):Promise<string> {
   const digest=await crypto.subtle.digest("SHA-256",encoder.encode(value));
   return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("");
@@ -146,7 +152,7 @@ async function authRoutes(request:Request,env:Env,url:URL):Promise<Response|null
     if(request.headers.get("Origin")!==new URL(env.APP_ORIGIN).origin)fail(403,"Request origin rejected.");
     const input=await readBody(request);
     const supplied=typeof input.setupToken==="string"?input.setupToken:"";
-    if(supplied.length!==env.ADMIN_SETUP_TOKEN.length||!(await sha256(supplied)).includes(await sha256(env.ADMIN_SETUP_TOKEN)))fail(403,"Setup authorization rejected.");
+    if(!constantTimeEqual(supplied,env.ADMIN_SETUP_TOKEN))fail(403,"Setup authorization rejected.");
     if(!passwordPolicy(input.newPassword))fail(400,"Use a password of at least 12 characters and at most 256 bytes.");
     const admin=await env.DB.prepare("SELECT id,email,password_hash FROM admins ORDER BY created_at LIMIT 1").first<any>();
     if(!admin||!admin.password_hash.startsWith("scrypt$"))fail(409,"The existing administrator is missing or has already been migrated.");
@@ -210,6 +216,11 @@ export default {
         if(response)return response;
       }
       if(url.pathname.startsWith("/api/"))return json({error:"API endpoint not available."},404);
+      const privatePage=url.pathname==="/admin"||(url.pathname.startsWith("/admin/")&&url.pathname!=="/admin/login");
+      if(privatePage) {
+        const session=await getSession(request,env.DB);
+        if(!session)return new Response(null,{status:302,headers:{Location:"/admin/login","Cache-Control":"no-store"}});
+      }
       return env.ASSETS.fetch(request);
     } catch(error) {
       if(error instanceof HttpError)return json({error:error.message},error.status);

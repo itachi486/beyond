@@ -12,7 +12,9 @@
     "preview": "vite preview --host 0.0.0.0",
     "start": "node --env-file-if-exists=.env server/index.mjs",
     "admin:setup": "node --env-file-if-exists=.env server/setup-admin.mjs",
-    "test:server": "node --test server/tests/*.test.mjs"
+    "test:server": "node --test server/tests/*.test.mjs",
+    "build:cloudflare": "npm run build",
+    "deploy:cloudflare": "npm run build && npx wrangler deploy"
   },
   "dependencies": {
     "react": "^19.1.0",

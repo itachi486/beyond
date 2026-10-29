@@ -11,6 +11,7 @@ interface D1PreparedStatement {
 }
 interface D1Database {
   prepare(query: string): D1PreparedStatement;
+  batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
 }
 interface Fetcher {
   fetch(request: Request): Promise<Response>;
@@ -161,7 +162,112 @@ async function rateLimit(db:D1Database,key:string,max:number) {
   await db.prepare("INSERT INTO login_limits(key_hash,attempts,reset_at) VALUES(?,?,?) ON CONFLICT(key_hash) DO UPDATE SET attempts=excluded.attempts,reset_at=excluded.reset_at")
     .bind(hash,row&&row.reset_at>now?row.attempts+1:1,row&&row.reset_at>now?row.reset_at:now+15*60*1000).run();
 }
-async function authRoutes(request:Request,env:Env,url:URL):Promise<Response|null> {
+
+const STATES = ["draft","review","published","archived"];
+const THEMES = ["archive","elsewhere","unsolved","natural"];
+function textField(v:unknown,max=20000):string {
+  if(typeof v!=="string"||v.length>max)fail(400,"Invalid or oversized text field.");
+  return v.trim();
+}
+function localized(v:any,max:number) {
+  if(!v||typeof v!=="object"||Array.isArray(v))fail(400,"English content is required.");
+  return {en:textField(v.en??"",max),es:textField(v.es??"",max)};
+}
+function slugField(v:unknown):string {
+  const value=textField(v,90);
+  if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))fail(400,"Use a lowercase slug with letters, numbers and hyphens.");
+  return value;
+}
+function safeUrl(v:unknown,local=false):string {
+  const value=textField(v,2048);
+  if(local&&/^\/(?!\/)[a-zA-Z0-9_./-]+$/.test(value)&&!value.includes(".."))return value;
+  try {const u=new URL(value);if(u.protocol==="https:"&&!u.username&&!u.password)return u.href;}catch{}
+  fail(400,"Use a valid HTTPS URL or supported local image path.");
+}
+function validateWorld(input:any,old:any) {
+  const name=localized(input.name,160),description=localized(input.description,2000);
+  if(!name.en)fail(400,"An English world name is required.");
+  const status=input.status??"draft";
+  if(!STATES.includes(status)||!THEMES.includes(input.theme))fail(400,"Invalid publication state or presentation theme.");
+  if(status==="published"&&!description.en)fail(400,"A published world requires an English description.");
+  if(typeof input.color!=="string"||!/^#[0-9a-fA-F]{6}$/.test(input.color))fail(400,"Use a six-digit hex color.");
+  const order=Number(input.order??0);
+  if(!Number.isInteger(order)||order<0||order>999)fail(400,"World order must be 0–999.");
+  let hubPosition=old?.hubPosition;
+  if(old?.hubKey) {
+    hubPosition=input.hubPosition||old.hubPosition;
+    if(!Array.isArray(hubPosition)||hubPosition.length!==3||hubPosition[1]!==0||
+      hubPosition.some((n:any)=>typeof n!=="number"||!Number.isFinite(n)||Math.abs(n)>60))
+      fail(400,"Hub placement requires X/Z within ±60 and Y=0.");
+  }
+  return {hubKey:old?.hubKey,hubPosition,name,description,slug:slugField(input.slug),theme:input.theme,
+    color:input.color,symbol:String(input.symbol||"05").slice(0,3),order,status,aliases:old?.aliases||[]};
+}
+async function validateDiscovery(input:any,db:D1Database,old:any) {
+  const title=localized(input.title,200),summary=localized(input.summary,500);
+  if(!title.en)fail(400,"An English title is required.");
+  const status=input.status??"draft";
+  if(!STATES.includes(status))fail(400,"Invalid publication state.");
+  const world=await db.prepare("SELECT status,data FROM worlds WHERE id=?").bind(input.worldId).first<any>();
+  if(!world)fail(400,"Choose an existing world.");
+  if(!Array.isArray(input.body)||input.body.length>30)fail(400,"Body must contain up to 30 paragraphs.");
+  const body=input.body.map((p:any)=>localized(p,10000));
+  const sources=input.sources??[];
+  if(!Array.isArray(sources)||sources.length>20)fail(400,"Use up to 20 sources.");
+  const normalized=sources.map((s:any)=>({url:safeUrl(s.url),description:textField(s.description??"",500),
+    verification:s.verification==="verified"?"verified":"unverified"}));
+  const position=input.position;
+  if(!Array.isArray(position)||position.length!==3||position.some((n:any)=>typeof n!=="number"||!Number.isFinite(n)||Math.abs(n)>100))
+    fail(400,"Position requires three numbers between -100 and 100.");
+  if(JSON.parse(world.data).hubKey&&(Math.abs(position[0])>4||Math.abs(position[2])>4||position[1]<0||position[1]>6))
+    fail(400,"Hub discovery placement requires local X/Z within ±4 and Y within 0–6.");
+  if(!["article","question"].includes(input.contentType))fail(400,"Invalid content type.");
+  if(status==="published"&&(world.status!=="published"||!summary.en||!body.some((p:any)=>p.en)||
+    (input.truthType!=="fictional"&&!normalized.length)||normalized.some((s:any)=>!s.description)))
+    fail(400,"Publication requires a published world, hint, English body and described sources.");
+  const truthType=input.truthType||"factual",verificationStatus=input.verificationStatus||"needs_review";
+  if(!["factual","hypothesis","fictional"].includes(truthType)||
+    !["needs_review","verified","hypothetical","rejected"].includes(verificationStatus))
+    fail(400,"Invalid content classification or editorial status.");
+  const uncertainty=textField(input.uncertainty??"",3000);
+  const sameLegacy=old?.legacyPublished===true&&old.status==="published"&&status==="published"&&
+    JSON.stringify({title,summary,body,sources:normalized,worldId:input.worldId})===
+    JSON.stringify({title:old.title,summary:old.summary,body:old.body,sources:old.sources,worldId:old.worldId});
+  if(status==="published"&&verificationStatus==="rejected")fail(400,"Rejected content cannot be published.");
+  if(status==="published"&&truthType==="factual"&&verificationStatus!=="verified"&&!sameLegacy)
+    fail(400,"An authorized editor must verify factual content before publication.");
+  if(status==="published"&&truthType!=="factual"&&(verificationStatus!=="hypothetical"||!uncertainty))
+    fail(400,"Hypotheses and fictional scenarios require a hypothetical label and uncertainty note.");
+  return {truthType,verificationStatus,uncertainty,legacyPublished:sameLegacy,title,summary,body,
+    slug:slugField(input.slug),worldId:input.worldId,contentType:input.contentType,sources:normalized,position,
+    evidence:textField(input.evidence??"",10000),interpretation:textField(input.interpretation??"",10000),
+    questions:textField(input.questions??"",10000),media:input.media?safeUrl(input.media,true):"",
+    fictionLabel:false,shareImage:"/og.svg",status,aliases:old?.aliases||[]};
+}
+async function allRows(db:D1Database,table:"worlds"|"discoveries") {
+  const r=await db.prepare(`SELECT * FROM ${table} ORDER BY updated_at DESC,id`).all<any>();
+  return (r.results||[]).map(parseRow);
+}
+async function getItem(db:D1Database,table:"worlds"|"discoveries",id:string) {
+  const row=await db.prepare(`SELECT * FROM ${table} WHERE id=?`).bind(id).first<any>();
+  if(!row)fail(404,"Record not found.");
+  return parseRow(row);
+}
+async function writeRevision(db:D1Database,kind:string,id:string,actor:string,snapshot:any) {
+  return db.prepare("INSERT INTO revisions(kind,record_id,actor,snapshot,created_at) VALUES(?,?,?,?,?)")
+    .bind(kind,id,actor,JSON.stringify(snapshot),new Date().toISOString());
+}
+async function listRecords(db:D1Database,table:"worlds"|"discoveries",params:URLSearchParams) {
+  const all=await allRows(db,table),search=(params.get("search")||"").toLowerCase(),
+    state=params.get("status"),worldId=params.get("worldId");
+  const filtered=all.filter((r:any)=>(!state||r.status===state)&&(!worldId||r.worldId===worldId)&&
+    (!search||[r.title?.en,r.title?.es,r.name?.en,r.name?.es,r.slug].some((s:any)=>s?.toLowerCase().includes(search))));
+  const requested=Number(params.get("page")||1);
+  if(!Number.isInteger(requested)||requested<1||requested>100000)fail(400,"Invalid page number.");
+  const totalPages=Math.max(1,Math.ceil(filtered.length/10)),page=Math.min(requested,totalPages);
+  return {items:filtered.slice((page-1)*10,page*10),total:filtered.length,page,totalPages};
+}
+\nasync function authRoutes(request:Request,env:Env,url:URL):Promise<Response|null> {
   const path=url.pathname,method=request.method;
   if(path==="/api/admin/bootstrap-password") {
     if(method!=="POST")return json({error:"Method not allowed."},405);
@@ -219,8 +325,105 @@ async function authRoutes(request:Request,env:Env,url:URL):Promise<Response|null
     const created=await createSession(env.DB,session.admin_id);
     return json({ok:true},200,{"Set-Cookie":cookie(created.token,Math.floor(SESSION_TTL/1000))});
   }
-  // Editorial routes are migrated in the next stage; never silently expose them.
-  return json({error:"Editorial API migration is not complete."},501);
+
+  if(path==="/api/admin/dashboard"&&method==="GET") {
+    const worlds=await allRows(env.DB,"worlds"),discoveries=await allRows(env.DB,"discoveries"),published=await publicUniverse(env.DB);
+    return json({worlds:worlds.length,totalDiscoveries:discoveries.length,
+      needsReview:discoveries.filter((d:any)=>d.verificationStatus==="needs_review").length,
+      verified:discoveries.filter((d:any)=>d.verificationStatus==="verified").length,
+      published:published.discoveries.length,drafts:discoveries.filter((d:any)=>d.status==="draft").length,
+      review:discoveries.filter((d:any)=>d.status==="review").length,
+      recent:[...worlds.map((w:any)=>({...w,kind:"world"})),...discoveries.map((d:any)=>({...d,kind:"discovery"}))]
+        .sort((a:any,b:any)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,6)});
+  }
+  if(path==="/api/admin/catalog"&&method==="GET") {
+    const [worlds,discoveries,connections]=await Promise.all([
+      allRows(env.DB,"worlds"),allRows(env.DB,"discoveries"),
+      env.DB.prepare("SELECT * FROM connections ORDER BY id").all<any>()]);
+    return json({worlds:worlds.map((w:any)=>({id:w.id,name:w.name,status:w.status,hubKey:w.hubKey})),
+      discoveries:discoveries.map((d:any)=>({id:d.id,title:d.title,worldId:d.worldId,status:d.status})),
+      connections:connections.results||[]});
+  }
+  const recordMatch=path.match(/^\/api\/admin\/(worlds|discoveries)(?:\/([a-zA-Z0-9-]+))?$/);
+  if(recordMatch) {
+    const table=recordMatch[1] as "worlds"|"discoveries",id=recordMatch[2];
+    if(method==="GET") {
+      if(id) {
+        const [record,history]=await Promise.all([getItem(env.DB,table,id),
+          env.DB.prepare("SELECT id,actor,snapshot,created_at FROM revisions WHERE kind=? AND record_id=? ORDER BY id DESC LIMIT 20").bind(table,id).all()]);
+        return json({item:record,history:history.results||[]});
+      }
+      return json(await listRecords(env.DB,table,url.searchParams));
+    }
+    if(method!=="POST"&&method!=="PUT")fail(405,"Use archive rather than deleting content.");
+    if((method==="POST"&&id)||(method==="PUT"&&!id))fail(405,"Method not allowed.");
+    const old=id?await getItem(env.DB,table,id):null;
+    const data=table==="worlds"?validateWorld(input,old):await validateDiscovery(input,env.DB,old);
+    if(old&&input.version!==old.version)fail(409,"This record changed. Reload before saving.");
+    const recordId=id||crypto.randomUUID(),timestamp=new Date().toISOString();
+    if(old&&old.slug!==data.slug)data.aliases=[...new Set([...(old.aliases||[]),old.slug])];
+    const all=await allRows(env.DB,table);
+    if(all.some((r:any)=>r.id!==recordId&&(r.slug===data.slug||(r.aliases||[]).includes(data.slug))))
+      fail(409,"This slug is already used.");
+    const statements=[];
+    if(old) {
+      statements.push(await writeRevision(env.DB,table,recordId,session.admin_id,old));
+      if(table==="worlds")statements.push(env.DB.prepare("UPDATE worlds SET slug=?,status=?,data=?,version=version+1,updated_at=? WHERE id=? AND version=?")
+        .bind(data.slug,data.status,JSON.stringify(data),timestamp,recordId,old.version));
+      else statements.push(env.DB.prepare("UPDATE discoveries SET slug=?,status=?,data=?,version=version+1,updated_at=?,world_id=? WHERE id=? AND version=?")
+        .bind(data.slug,data.status,JSON.stringify(data),timestamp,data.worldId,recordId,old.version));
+    } else if(table==="worlds")statements.push(env.DB.prepare("INSERT INTO worlds(id,slug,status,data,created_at,updated_at) VALUES(?,?,?,?,?,?)")
+      .bind(recordId,data.slug,data.status,JSON.stringify(data),timestamp,timestamp));
+    else statements.push(env.DB.prepare("INSERT INTO discoveries(id,slug,world_id,status,data,created_at,updated_at) VALUES(?,?,?,?,?,?,?)")
+      .bind(recordId,data.slug,data.worldId,data.status,JSON.stringify(data),timestamp,timestamp));
+    const results=await env.DB.batch(statements);
+    if(old&&results[results.length-1].meta.changes!==1)fail(409,"This record changed. Reload before saving.");
+    return json({item:await getItem(env.DB,table,recordId)},old?200:201);
+  }
+  if(path==="/api/admin/connections"&&method==="POST") {
+    if(input.fromId===input.toId)fail(400,"A discovery cannot link to itself.");
+    for(const id of [input.fromId,input.toId]) {
+      const row=await env.DB.prepare("SELECT status FROM discoveries WHERE id=?").bind(id).first<any>();
+      if(!row||row.status==="archived")fail(400,"Choose existing, non-archived discoveries.");
+    }
+    if(typeof input.explanation!=="string"||!input.explanation.trim()||input.explanation.length>1000)
+      fail(400,"Explain this connection in 1–1000 characters.");
+    const id=crypto.randomUUID();
+    await env.DB.prepare("INSERT INTO connections(id,from_id,to_id,explanation) VALUES(?,?,?,?)")
+      .bind(id,input.fromId,input.toId,input.explanation.trim()).run();
+    return json({id},201);
+  }
+  const link=path.match(/^\/api\/admin\/connections\/([a-zA-Z0-9-]+)$/);
+  if(link) {
+    const old=await env.DB.prepare("SELECT * FROM connections WHERE id=?").bind(link[1]).first<any>();
+    if(!old)fail(404,"Connection not found.");
+    if(method==="PUT") {
+      if(typeof input.explanation!=="string"||!input.explanation.trim()||input.explanation.length>1000)
+        fail(400,"Explain this connection in 1–1000 characters.");
+      await env.DB.batch([await writeRevision(env.DB,"connections",old.id,session.admin_id,old),
+        env.DB.prepare("UPDATE connections SET explanation=? WHERE id=?").bind(input.explanation.trim(),old.id)]);
+      return json({ok:true});
+    }
+    if(method==="DELETE") {
+      await env.DB.batch([await writeRevision(env.DB,"connections",old.id,session.admin_id,old),
+        env.DB.prepare("DELETE FROM connections WHERE id=?").bind(old.id)]);
+      return json({ok:true});
+    }
+    fail(405,"Method not allowed.");
+  }
+  if(path==="/api/admin/settings") {
+    if(method==="GET") {
+      const row=await env.DB.prepare("SELECT data FROM settings WHERE id=1").first<any>();
+      if(!row)fail(500,"Settings have not been initialized.");
+      return json(JSON.parse(row.data));
+    }
+    if(method==="PUT") {
+      if(!["en","es"].includes(input.defaultLanguage))fail(400,"Choose English or Spanish.");
+      await env.DB.prepare("UPDATE settings SET data=? WHERE id=1").bind(JSON.stringify({defaultLanguage:input.defaultLanguage})).run();
+      return json({ok:true});
+    }
+  }
+  return json({error:"Endpoint not found."},404);
 }
 
 export default {

@@ -27,8 +27,7 @@ const lines = [
   "-- BEYOND SQLite export for Cloudflare D1.",
   "-- Contains admin password hashes and active session hashes; keep private.",
   "-- Apply only after migrations/0001_initial.sql has been applied.",
-  "PRAGMA foreign_keys=OFF;",
-  "BEGIN TRANSACTION;",
+  "-- D1/Wrangler wraps file execution; do not emit SQLite transaction or PRAGMA statements.",
 ];
 
 for (const [table, columns] of tables) {
@@ -40,7 +39,7 @@ for (const [table, columns] of tables) {
   }
 }
 
-lines.push("COMMIT;", "PRAGMA foreign_keys=ON;");
+// D1's SQL file executor manages the import transaction; no BEGIN/COMMIT is emitted.
 writeFileSync(resolve(output), lines.join("\n") + "\n", { mode: 0o600 });
 db.close();
 console.log(`Exported BEYOND data to ${resolve(output)}. Keep this file private and delete it after secure import.`);

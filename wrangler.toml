@@ -14,4 +14,4 @@ database_id = "32790ae4-64e8-4d69-af37-55880fac36b6"
 migrations_dir = "migrations"
 
 [vars]
-APP_ORIGIN = "https://REPLACE_WITH_YOUR_DOMAIN"
+APP_ORIGIN = "https://beyond.itach9279.workers.dev"

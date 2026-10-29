@@ -304,10 +304,12 @@ async function listRecords(db:D1Database,table:"worlds"|"discoveries",params:URL
   if(!path.startsWith("/api/admin/"))return null;
   const session=await getSession(request,env.DB);
   if(!session)fail(401,"Administrator sign-in required.");
+  let input:any={};
   if(method!=="GET"&&method!=="HEAD") {
     if(request.headers.get("Origin")!==new URL(env.APP_ORIGIN).origin)fail(403,"Request origin rejected.");
     if(request.headers.get("Content-Type")?.split(";")[0]!=="application/json")fail(415,"Use application/json.");
     if(request.headers.get("X-CSRF-Token")!==session.csrf)fail(403,"Request verification failed. Refresh and try again.");
+    input=await readBody(request);
   }
   if(path==="/api/admin/session"&&method==="GET")return json({email:session.email,csrf:session.csrf,expiresAt:session.expires_at});
   if(path==="/api/admin/logout"&&method==="POST") {
@@ -315,7 +317,7 @@ async function listRecords(db:D1Database,table:"worlds"|"discoveries",params:URL
     return json({ok:true},200,{"Set-Cookie":cookie("",0)});
   }
   if(path==="/api/admin/password"&&method==="POST") {
-    const input=await readBody(request),admin=await env.DB.prepare("SELECT password_hash FROM admins WHERE id=?").bind(session.admin_id).first<any>();
+    const admin=await env.DB.prepare("SELECT password_hash FROM admins WHERE id=?").bind(session.admin_id).first<any>();
     await rateLimit(env.DB,"password:"+session.admin_id,6);
     if(!admin||!(await verifyPassword(input.currentPassword,admin.password_hash)))fail(400,"Current password is incorrect.");
     if(!passwordPolicy(input.newPassword))fail(400,"Use a password of at least 12 characters and at most 256 bytes.");

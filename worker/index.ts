@@ -57,7 +57,7 @@ async function publicUniverse(db: D1Database) {
     db.prepare("SELECT id,from_id,to_id,explanation FROM connections ORDER BY rowid").all(),
     db.prepare("SELECT data FROM settings WHERE id=1").first<{data:string}>(),
   ]);
-  const worlds = (wr.results || []).map(parseRow).sort((a:any,b:any)=>a.order-b.order)
+  const worlds: any[] = (wr.results || []).map(parseRow).sort((a:any,b:any)=>a.order-b.order)
     .map(({status,version,createdAt,updatedAt,...w}:any)=>({...w,
       name:{en:w.name.en,es:w.name.es||w.name.en},
       description:{en:w.description.en,es:w.description.es||w.description.en}}));
@@ -110,7 +110,7 @@ async function hashPassword(password:string):Promise<string> {
   if(!passwordPolicy(password)) throw new Error("Use a password of at least 12 characters and at most 256 bytes.");
   const salt=new Uint8Array(16); crypto.getRandomValues(salt);
   const key=await crypto.subtle.importKey("raw",encoder.encode(password),"PBKDF2",false,["deriveBits"]);
-  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt,iterations:PBKDF2_ITERATIONS},key,256);
+  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:salt as unknown as BufferSource,iterations:PBKDF2_ITERATIONS},key,256);
   return `pbkdf2-sha256$${PBKDF2_ITERATIONS}$${b64(salt)}$${b64(new Uint8Array(bits))}`;
 }
 async function verifyPassword(password:unknown,stored:string):Promise<boolean> {

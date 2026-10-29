@@ -253,9 +253,9 @@ async function getItem(db:D1Database,table:"worlds"|"discoveries",id:string) {
   if(!row)fail(404,"Record not found.");
   return parseRow(row);
 }
-async function writeRevision(db:D1Database,kind:string,id:string,actor:string,snapshot:any) {
-  return db.prepare("INSERT INTO revisions(kind,record_id,actor,snapshot,created_at) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM worlds WHERE id=? AND version=?) OR EXISTS (SELECT 1 FROM discoveries WHERE id=? AND version=?)")
-    .bind(kind,id,actor,JSON.stringify(snapshot),new Date().toISOString(),id,snapshot.version??-1,id,snapshot.version??-1);
+async function writeRevision(db:D1Database,kind:"worlds"|"discoveries",id:string,actor:string,snapshot:any) {
+  return db.prepare(`INSERT INTO revisions(kind,record_id,actor,snapshot,created_at) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM ${kind} WHERE id=? AND version=?)`)
+    .bind(kind,id,actor,JSON.stringify(snapshot),new Date().toISOString(),id,snapshot.version??-1);
 }
 async function listRecords(db:D1Database,table:"worlds"|"discoveries",params:URLSearchParams) {
   const all=await allRows(db,table),search=(params.get("search")||"").toLowerCase(),

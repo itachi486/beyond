@@ -54,7 +54,7 @@ async function publicUniverse(db: D1Database) {
   const [wr, dr, cr, sr] = await Promise.all([
     db.prepare("SELECT id,slug,status,data,version,created_at,updated_at FROM worlds WHERE status='published'").all(),
     db.prepare("SELECT id,slug,world_id,status,data,version,created_at,updated_at FROM discoveries WHERE status='published'").all(),
-    db.prepare("SELECT id,from_id,to_id,explanation FROM connections ORDER BY id").all(),
+    db.prepare("SELECT id,from_id,to_id,explanation FROM connections ORDER BY rowid").all(),
     db.prepare("SELECT data FROM settings WHERE id=1").first<{data:string}>(),
   ]);
   const worlds = (wr.results || []).map(parseRow).sort((a:any,b:any)=>a.order-b.order)

@@ -1,16 +1,17 @@
 # BEYOND Cloudflare Workers + D1 migration
 
-This branch adds the Cloudflare deployment foundation without replacing the existing Node/SQLite application.
+This branch adds the Cloudflare deployment foundation while preserving the existing Node/SQLite application on `main`.
 
 ## Current migration scope
 
 - The existing Vite/React/Three.js frontend remains unchanged.
 - `worker/index.ts` serves static assets and implements the public `GET /api/public/universe` response against D1.
+- Admin password migration, login, session creation/expiry, logout, password changes, CSRF checks, login throttling, and protected `/admin/*` pages now have a Workers-compatible implementation.
+- Existing administrator email is retained. The first successful password migration replaces the imported Node `scrypt` hash with a Workers Web Crypto PBKDF2-HMAC-SHA256 hash (600,000 iterations), then revokes all existing sessions.
 - `migrations/0001_initial.sql` creates the existing SQLite-compatible tables in D1.
 - `scripts/export-sqlite-to-d1.mjs` exports existing records for a private D1 import.
-- Existing Node server and admin UI remain on the original code path.
 
-**Admin APIs are not yet migrated.** Do not point the production admin UI at this Worker until login, sessions, CSRF, rate limiting, password change, revisions, and all editorial mutations are ported and tested. The Worker returns 404 for unimplemented API routes rather than pretending they work.
+**Editorial APIs are still incomplete.** Dashboard, catalog, world/discovery CRUD, connections, settings, and revision/history routes are not yet ported. They return HTTP 501 rather than pretending to work. Do not route the production admin UI to this Worker until those handlers and their validation/transaction behavior are ported and tested.
 
 ## Prepare local configuration
 
@@ -20,7 +21,7 @@ This branch adds the Cloudflare deployment foundation without replacing the exis
 4. Set the real production origin in `APP_ORIGIN`.
 5. Apply schema: `npx wrangler d1 migrations apply beyond-production --remote`.
 
-Never commit Cloudflare API tokens, account IDs, real admin passwords, session cookies, or exported SQL data.
+Never commit Cloudflare API tokens, account IDs, real admin passwords, session cookies, setup tokens, or exported SQL data.
 
 ## Export existing SQLite data
 
@@ -31,7 +32,40 @@ node scripts/export-sqlite-to-d1.mjs .local/beyond-backup.sqlite beyond-data-exp
 npx wrangler d1 execute beyond-production --remote --file=./beyond-data-export.sql
 ```
 
-The SQL export includes editor password hashes and active session hashes to preserve the existing admin account/session state. Treat it as a secret. Store it locally only, never commit it, and securely delete it after a verified import. If you prefer to revoke all existing sessions, remove the session rows from the export before import.
+The SQL export includes administrator password hashes and active session hashes. Treat it as a secret. Store it locally only, never commit it, and securely delete it after a verified import. The first password migration revokes all imported sessions.
+
+## One-time administrator password migration
+
+Do this only after importing the existing administrator row into the target D1 database and configuring the correct `APP_ORIGIN`.
+
+1. Generate a long, random, one-time token locally. Do not put it in source code or commit it.
+2. Store it as a Worker secret:
+
+   ```sh
+   npx wrangler secret put ADMIN_SETUP_TOKEN
+   ```
+
+3. Send one HTTPS POST to `/api/admin/bootstrap-password` with JSON containing `setupToken` and `newPassword`. The request must include the exact configured site `Origin` header. Example (replace the placeholders; avoid saving the real token/password in shell history):
+
+   ```sh
+   curl -X POST "https://YOUR_DOMAIN/api/admin/bootstrap-password" \
+     -H "Origin: https://YOUR_DOMAIN" \
+     -H "Content-Type: application/json" \
+     --data-binary @admin-bootstrap.json
+   ```
+
+   The local `admin-bootstrap.json` file should contain the token and new password. Keep it outside the repository and delete it securely after use.
+
+4. Confirm the response reports the existing administrator email and `passwordUpdated: true`. The email is not changed. The endpoint only accepts an existing `scrypt` hash, so it cannot be used a second time after successful migration.
+5. Immediately remove the setup secret:
+
+   ```sh
+   npx wrangler secret delete ADMIN_SETUP_TOKEN
+   ```
+
+6. Sign in through the admin login UI using the existing email and newly chosen password.
+
+The setup endpoint rejects requests from a different origin, requires the secret, updates only the imported administrator whose hash is still in the legacy `scrypt` format, and invalidates all sessions. Never expose the setup token in a browser bundle, URL, query string, logs, or chat.
 
 ## Build and deploy
 
@@ -39,4 +73,4 @@ The Vite frontend build remains `npm run build`. After D1 configuration and migr
 
 ## Rollback
 
-The original Node/SQLite server and main branch are unchanged. Do not merge this branch or change the production Cloudflare project until the Worker public endpoint and the complete admin API have passed staging tests. Keep a verified SQLite backup before importing or switching traffic.
+The original Node/SQLite server and main branch are unchanged. Do not merge this branch or change the production Cloudflare project until the Worker public endpoint, authentication flow, and complete editorial API have passed staging tests. Keep a verified SQLite backup before importing or switching traffic.

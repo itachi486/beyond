@@ -120,7 +120,7 @@ async function verifyPassword(password:unknown,stored:string):Promise<boolean> {
   try {
     const salt=unb64(p[2]), expected=unb64(p[3]);
     const key=await crypto.subtle.importKey("raw",encoder.encode(password),"PBKDF2",false,["deriveBits"]);
-    const bits=new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt,iterations:PBKDF2_ITERATIONS},key,256));
+    const bits=new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:salt.buffer as ArrayBuffer,iterations:PBKDF2_ITERATIONS},key,256));
     if(bits.length!==expected.length)return false;
     let diff=0; for(let i=0;i<bits.length;i++)diff|=bits[i]^expected[i];
     return diff===0;
@@ -364,7 +364,7 @@ async function authRoutes(request:Request,env:Env,url:URL):Promise<Response|null
     if(method!=="POST"&&method!=="PUT")fail(405,"Use archive rather than deleting content.");
     if((method==="POST"&&id)||(method==="PUT"&&!id))fail(405,"Method not allowed.");
     const old=id?await getItem(env.DB,table,id):null;
-    const data=table==="worlds"?validateWorld(input,old):await validateDiscovery(input,env.DB,old);
+    const data:any=table==="worlds"?validateWorld(input,old):await validateDiscovery(input,env.DB,old);
     if(old&&input.version!==old.version)fail(409,"This record changed. Reload before saving.");
     const recordId=id||crypto.randomUUID(),timestamp=new Date().toISOString();
     if(old&&old.slug!==data.slug)data.aliases=[...new Set([...(old.aliases||[]),old.slug])];

@@ -267,7 +267,8 @@ async function listRecords(db:D1Database,table:"worlds"|"discoveries",params:URL
   const totalPages=Math.max(1,Math.ceil(filtered.length/10)),page=Math.min(requested,totalPages);
   return {items:filtered.slice((page-1)*10,page*10),total:filtered.length,page,totalPages};
 }
-\nasync function authRoutes(request:Request,env:Env,url:URL):Promise<Response|null> {
+
+async function authRoutes(request:Request,env:Env,url:URL):Promise<Response|null> {
   const path=url.pathname,method=request.method;
   if(path==="/api/admin/bootstrap-password") {
     if(method!=="POST")return json({error:"Method not allowed."},405);

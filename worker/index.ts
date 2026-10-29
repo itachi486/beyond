@@ -294,7 +294,8 @@ async function listRecords(db:D1Database,table:"worlds"|"discoveries",params:URL
     await rateLimit(env.DB,"account:"+email,6);
     await rateLimit(env.DB,"ip:"+((request.headers.get("CF-Connecting-IP"))||"unknown"),20);
     const admin=await env.DB.prepare("SELECT * FROM admins WHERE email=?").bind(email).first<any>();
-    const valid=admin?await verifyPassword(input.password,admin.password_hash):false;
+    const dummyHash="pbkdf2-sha256$600000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    const valid=await verifyPassword(input.password,admin?.password_hash||dummyHash);
     if(!validEmail(email)||!admin||!valid)fail(401,"Email or password is incorrect.");
     const old=await getSession(request,env.DB);
     if(old)await env.DB.prepare("DELETE FROM sessions WHERE token_hash=?").bind(old.token_hash).run();

@@ -12,3 +12,7 @@ playwright-report/
 *.db
 *.db-*
 !.env.example
+
+# Private database export for Cloudflare D1
+beyond-data-export.sql
+*.export.sql

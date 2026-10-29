@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, chmodSync } from "node:fs";
 import { resolve } from "node:path";
 
 const input = process.argv[2] || ".local/beyond.sqlite";
@@ -41,5 +41,6 @@ for (const [table, columns] of tables) {
 
 // D1's SQL file executor manages the import transaction; no BEGIN/COMMIT is emitted.
 writeFileSync(resolve(output), lines.join("\n") + "\n", { mode: 0o600 });
+chmodSync(resolve(output), 0o600);
 db.close();
 console.log(`Exported BEYOND data to ${resolve(output)}. Keep this file private and delete it after secure import.`);

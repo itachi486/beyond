@@ -11,7 +11,7 @@ This branch adds the Cloudflare deployment foundation while preserving the exist
 - `migrations/0001_initial.sql` creates the existing SQLite-compatible tables in D1.
 - `scripts/export-sqlite-to-d1.mjs` exports existing records for a private D1 import.
 
-**Editorial APIs are still incomplete.** Dashboard, catalog, world/discovery CRUD, connections, settings, and revision/history routes are not yet ported. They return HTTP 501 rather than pretending to work. Do not route the production admin UI to this Worker until those handlers and their validation/transaction behavior are ported and tested.
+**The admin API port is implemented but not yet verified in a Cloudflare staging environment.** Dashboard, catalog, world/discovery listing and CRUD, connection create/update/delete, settings, and revision/history reads are implemented. Record updates use optimistic version checks and D1 batches to keep revisions and mutations together. Do not route the production admin UI to this Worker until build, integration, and staging tests pass.
 
 ## Prepare local configuration
 

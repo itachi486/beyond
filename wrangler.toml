@@ -1,0 +1,17 @@
+name = "beyond"
+main = "worker/index.ts"
+compatibility_date = "2026-10-30"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "beyond-production"
+database_id = "32790ae4-64e8-4d69-af37-55880fac36b6"
+migrations_dir = "migrations"
+
+[vars]
+APP_ORIGIN = "https://beyond.itach9279.workers.dev"

@@ -5,6 +5,10 @@ import { resolve } from "node:path";
 const input = process.argv[2] || ".local/beyond.sqlite";
 const output = process.argv[3] || "beyond-data-export.sql";
 const db = new DatabaseSync(resolve(input), { readOnly: true });
+
+// Preserve source-table order so referenced admins/worlds/discoveries exist
+// before dependent records are imported. Optional legacy tables are included
+// when present in the source SQLite database.
 const tables = [
   ["schema_versions", ["version", "applied_at"]],
   ["admins", ["id", "email", "password_hash", "created_at"]],
@@ -15,6 +19,9 @@ const tables = [
   ["connections", ["id", "from_id", "to_id", "explanation"]],
   ["revisions", ["id", "kind", "record_id", "actor", "snapshot", "created_at"]],
   ["settings", ["id", "data"]],
+  ["central_characters", ["id", "name", "description", "type", "tags", "source", "active", "deleted", "version", "kind", "format", "bytes", "file_key", "preview_key", "creator_id", "created_at", "updated_at"]],
+  ["central_activity", ["id", "action", "record_id", "name", "actor_id", "created_at"]],
+  ["permanent_deletion_jobs", ["id", "kind", "target_id", "version", "paths", "created_at"]],
 ];
 
 const quote = (value) => {
@@ -26,6 +33,7 @@ const quote = (value) => {
 const lines = [
   "-- BEYOND SQLite export for Cloudflare D1.",
   "-- Contains admin password hashes and active session hashes; keep private.",
+  "-- Also preserves central library metadata and pending deletion-job records.",
   "-- Apply only after migrations/0001_initial.sql has been applied.",
   "-- D1/Wrangler wraps file execution; do not emit SQLite transaction or PRAGMA statements.",
 ];
@@ -33,9 +41,9 @@ const lines = [
 for (const [table, columns] of tables) {
   const exists = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table);
   if (!exists) continue;
-  const rows = db.prepare(`SELECT ${columns.join(",")} FROM ${table}`).all();
+  const rows = db.prepare(`SELECT ${columns.join(",")} FROM "${table}"`).all();
   for (const row of rows) {
-    lines.push(`INSERT OR REPLACE INTO ${table} (${columns.join(",")}) VALUES (${columns.map((c) => quote(row[c])).join(",")});`);
+    lines.push(`INSERT OR REPLACE INTO "${table}" (${columns.map((c) => `"${c}"`).join(",")}) VALUES (${columns.map((c) => quote(row[c])).join(",")});`);
   }
 }
 

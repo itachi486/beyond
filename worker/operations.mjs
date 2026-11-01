@@ -12,7 +12,6 @@ export async function handleOperations(request,ctx,backend,rpc){
  const worlds=rows('worlds').map(editorial),discoveries=rows('discoveries').map(editorial),revisions=rows('revisions');
  if(key==='settings'){const settings=rows('settings').find(r=>r.id===1);return json(settings?JSON.parse(settings.data):{defaultLanguage:'en'});}
  if(key==='deletion-jobs')return json({items:[],scope:'Local deletion recovery journal preserved in migration; cloud permanent deletion is disabled.'});
- if(key==='dashboard')return json({administratorAccounts:1,serverCharacterAssets:0,browserCharacters:null,browserWorlds:null,worlds:worlds.length,totalDiscoveries:discoveries.length,needsReview:discoveries.filter(d=>d.verificationStatus==='needs_review').length,verified:discoveries.filter(d=>d.verificationStatus==='verified').length,published:discoveries.filter(d=>d.status==='published').length,drafts:discoveries.filter(d=>d.status==='draft').length,review:discoveries.filter(d=>d.status==='review').length,recent:[...worlds.map(w=>({...w,kind:'world'})),...discoveries.map(d=>({...d,kind:'discovery'}))].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,6)});
  const active=await(await backend('/rest/v1/beyond_active_batch?select=batch_id')).json();
  if(active.length!==1)throw new BackendError(503,'Active cloud dataset unavailable.');
  const batch=encodeURIComponent(active[0].batch_id),additional=[];
@@ -22,6 +21,7 @@ export async function handleOperations(request,ctx,backend,rpc){
    if(!Number.isFinite(total))throw new BackendError(503,'Cannot verify cloud totals.');additional.push(...page);if(additional.length===total)break;if(!page.length)throw new BackendError(503,'Cloud inventory incomplete.');offset+=page.length;
  }
  const characters=additional.filter(r=>r.collection==='central_characters').map(r=>r.record).filter(r=>!r.deleted),centralActivity=additional.filter(r=>r.collection==='central_activity').map(r=>r.record);
+ if(key==='dashboard')return json({administratorAccounts:1,serverCharacterAssets:characters.length+additional.filter(r=>r.collection==='ai_character_assets').length,browserCharacters:null,browserWorlds:null,worlds:worlds.length,totalDiscoveries:discoveries.length,needsReview:discoveries.filter(d=>d.verificationStatus==='needs_review').length,verified:discoveries.filter(d=>d.verificationStatus==='verified').length,published:discoveries.filter(d=>d.status==='published').length,drafts:discoveries.filter(d=>d.status==='draft').length,review:discoveries.filter(d=>d.status==='review').length,recent:[...worlds.map(w=>({...w,kind:'world'})),...discoveries.map(d=>({...d,kind:'discovery'}))].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,6)});
  const events=[...revisions.map(r=>({id:'revision-'+r.id,action:'Saved '+r.kind,name:'Saved revision',createdAt:r.created_at})),...centralActivity.map(r=>({id:r.id,action:r.action,name:r.name,createdAt:r.created_at}))].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
  if(key==='activity'){
    const search=(url.searchParams.get('search')||'').toLowerCase(),requested=Number(url.searchParams.get('page')||1);

@@ -100,6 +100,7 @@ export default function AdminApp() {
     return () => window.clearInterval(timer);
   }, []);
   const [setupState, setSetupState] = useState("unknown");
+  const [backendMode, setBackendMode] = useState("");
   const [session, setSession] = useState<Session | null>(null),
     [boot, setBoot] = useState(true),
     [error, setError] = useState(""),
@@ -153,6 +154,8 @@ export default function AdminApp() {
     id = parts[2],
     isLogin = section === "login",
     isEditor = (section === "worlds" || section === "discoveries") && !!id;
+  const limitedBackend = backendMode === "supabase-admin-production";
+  const unavailableSection = limitedBackend && !["", "login", "worlds", "discoveries", "activity"].includes(section);
   const request = useCallback(
     async (
       path: string,
@@ -194,7 +197,11 @@ export default function AdminApp() {
     ])
       .then(async ([res, setup]) => {
         if (!active) return;
-        if (setup.ok) setSetupState((await readAPIResponse(setup,"/api/admin/setup-status")).state);
+        if (setup.ok) {
+          const status = await readAPIResponse(setup,"/api/admin/setup-status");
+          setSetupState(status.state);
+          setBackendMode(status.backendMode || "");
+        }
         else setSetupState("unavailable");
         if (res.ok) {
           setSession(await readAPIResponse(res,"/api/admin/session"));
@@ -230,7 +237,7 @@ export default function AdminApp() {
     setError("");
   }, [section]);
   useEffect(() => {
-    if (!session || isLogin) return;
+    if (!session || isLogin || unavailableSection) return;
     if(!section||section==='analytics'||['images','users'].includes(section)){setLoading(false);return;}
     const controller = new AbortController();
     const load = async () => {
@@ -304,7 +311,7 @@ export default function AdminApp() {
     };
     void load();
     return () => controller.abort();
-  }, [session?.csrf, section, id, page, search, filter, refresh]);
+  }, [session?.csrf, section, id, page, search, filter, refresh, unavailableSection]);
   async function action(fn: () => Promise<void>) {
     if (busy) return;
     setBusy(true);
@@ -562,6 +569,12 @@ export default function AdminApp() {
         )}
       </main>
     );
+  if (unavailableSection) return (
+    <main className="admin-login">
+      <h1>This section is not available in this release.</h1>
+      <button onClick={() => navigate("/admin", { replace: true })}>Return to Dashboard</button>
+    </main>
+  );
   return (
     <main className={"admin-workspace" + (menuOpen ? " admin-menu-open" : "")}>
       <header className="fantasy-topbar">
@@ -599,6 +612,8 @@ export default function AdminApp() {
           {navigation.map(([key, label]) => (
             <button
               key={key}
+              disabled={limitedBackend && !["", "worlds", "discoveries", "activity"].includes(key)}
+              title={limitedBackend && !["", "worlds", "discoveries", "activity"].includes(key) ? "Not available in this release" : undefined}
               aria-label={label}
               aria-current={section === key ? "page" : undefined}
               onClick={() => {
@@ -811,7 +826,7 @@ export default function AdminApp() {
                         >
                           {t("ui.edit.5")}{" "}
                         </button>
-                        {section === "worlds" && r.id && (
+                        {section === "worlds" && r.id && !limitedBackend && (
                           <PermanentDelete
                             kind="world"
                             id={r.id}

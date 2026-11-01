@@ -28,7 +28,7 @@ export async function adminBody(request,env,session,login=false){
 export async function handleAdmin(request,env,backend){
  const path=new URL(request.url).pathname;
  const ctx=await adminContext(request,env,backend);
- if(path==='/api/admin/setup-status'&&request.method==='GET')return json(200,{state:ctx.ready?'ready':'operator_review_required',method:'local_command'});
+ if(path==='/api/admin/setup-status'&&request.method==='GET')return json(200,{state:ctx.ready?'ready':'operator_review_required',method:'local_command',...(env.BEYOND_BACKEND_MODE==='supabase-admin-production'?{backendMode:'supabase-admin-production'}:{})});
  if(path==='/api/admin/login'){
    if(request.method!=='POST')throw new BackendError(405,'Method not allowed.');
    const input=await adminBody(request,env,null,true);

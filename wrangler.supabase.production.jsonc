@@ -1,0 +1,28 @@
+// REVIEWED LOCAL DRAFT: deployment requires separate user approval.
+// Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ADMIN_ALLOWED_EMAIL.
+// No Preview D1/Tigris, member migration, AI, cron or B10 bindings.
+{
+  "name": "beyond",
+  "main": "worker/production.mjs",
+  "compatibility_date": "2026-10-29",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api",
+      "/api/*"
+    ]
+  },
+  "vars": {
+    "APP_ORIGIN": "https://beyond.itach9279.workers.dev",
+    "BEYOND_BACKEND_MODE": "supabase-admin-production",
+    "SUPABASE_CHARACTER_BUCKET": "beyond-character-assets",
+    "SUPABASE_PROJECT_ORIGIN_SHA256": "89123335667850d84bee9689b716ef36d6b957a55bfcd11656d31fb046574191",
+    "SUPABASE_EXPECTED_BATCH": "beyond-44658f896ee531b062767ccce63497f6c50c5ab36afa88465749a03e135edd5a"
+  }
+}

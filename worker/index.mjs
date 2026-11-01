@@ -1,4 +1,4 @@
-import { BackendError, supabase } from "./supabase.mjs";
+import { BackendError, supabase, verifyProductionDataset } from "./supabase.mjs";
 import { universeFromRecords } from "./universe.mjs";
 import { handleAdmin } from "./admin.mjs";
 const json = (status, value) => Response.json(value, { status, headers: {
@@ -7,15 +7,25 @@ const json = (status, value) => Response.json(value, { status, headers: {
 const idOK = value => /^[a-zA-Z0-9_-]{1,100}$/.test(value);
 export async function handle(request, env, transport = fetch) {
   const url = new URL(request.url), path = url.pathname;
-  if (!path.startsWith("/api/")) return env.ASSETS.fetch(request);
-  // This preview deliberately cannot replace the production API until admin
-  // authentication, transactional writes and browser ownership are migrated.
+  if (path !== '/api' && !path.startsWith("/api/")) return env.ASSETS.fetch(request);
+  if (path === '/api') return json(404, {error:'Endpoint not found.'});
+  // This backend intentionally serves administrators and public content only.
+  if (path === '/api/user/auth/session' && request.method === 'GET')
+    return json(401, {error:'Member sign-in is not enabled on this backend.'});
+  if (path === '/api/user/auth/status' && request.method === 'GET')
+    return json(200, {memberAccountsEnabled:false,registrationEnabled:false,emailConfigured:false});
+  if (path.startsWith('/api/user/'))
+    return json(503, {error:'Member accounts are not enabled on this administrator backend.'});
   if (path.startsWith("/api/ai/"))
-    return json(503, { error: "Cloud migration is incomplete. Existing administrator service remains on the local server." });
-  if (!path.startsWith('/api/admin/') && request.method !== "GET") return json(405, { error: "Method not allowed." });
+    return json(503, { error: "AI is not enabled on this administrator backend." });
+  const admin = path === '/api/admin' || path.startsWith('/api/admin/');
+  const publicRoute = path === '/api/public/universe' || /^\/api\/public\/characters(?:\/[^/]+\/(?:file|preview))?$/.test(path);
+  if (!admin && !publicRoute) return json(404, {error:'Endpoint not found.'});
+  if (!admin && request.method !== "GET") return json(405, { error: "Method not allowed." });
   try {
     const backend = supabase(env, transport);
-    if (path.startsWith('/api/admin/')) return await handleAdmin(request,env,backend);
+    await verifyProductionDataset(backend,env);
+    if (admin) return await handleAdmin(request,env,backend);
     if (path === "/api/public/universe") {
       const response = await backend("/rest/v1/rpc/beyond_public_records", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
       return json(200, universeFromRecords(await response.json()));

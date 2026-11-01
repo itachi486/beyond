@@ -1,0 +1,37 @@
+import {validateNativeJSON,validateNativeAssets} from './b10-validation.mjs';
+import{randomUUID,createHash}from'node:crypto';import{requireMember,verifyUserWrite,readUserJSON,memberResponse}from'./user-auth.mjs';import{runtime}from'./context.mjs';import{validateUpload}from'./generated/character-files.mjs';
+const sha=b=>createHash('sha256').update(b).digest('hex'),fail=(s,m)=>{throw Object.assign(Error(m),{status:s});},validId=s=>typeof s==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(s);
+function assetDTO(row){return{id:row.id,...JSON.parse(row.metadata),hash:row.hash,status:row.status,fileUrl:'/api/user/assets/'+row.id};}
+function assetIds(world){return [...new Set([...(world.starter?[world.starter.assetId]:[]),...(world.graph?.characters||[]).map(c=>c.uploadedAssetId).filter(Boolean)])];}
+function worldDTO(db,row){const saved=JSON.parse(row.data),ids=assetIds(saved.world);return{world:{...saved.world,cloudVersion:row.version,ownerId:row.owner_id,updatedAt:row.updated_at},sidecars:saved.sidecars,version:row.version,assets:ids.map(id=>db.prepare("SELECT * FROM user_world_assets WHERE user_id=? AND id=? AND status='ready'").get(row.owner_id,id)).filter(Boolean).map(assetDTO),updatedAt:row.updated_at};}
+export async function userWorldAPI(request,db,env){
+ const url=new URL(request.url);if(!/^\/api\/user\/(worlds|assets)(?:\/|$)/.test(url.pathname))return null;if(env.BEYOND_STAGE!=='migration-preview')return memberResponse({error:'Preview only.'},503);
+ try{const session=requireMember(db,request,env),parts=url.pathname.split('/').filter(Boolean),kind=parts[2],id=parts[3];if(id&&!validId(id))fail(404,'Not found.');
+  if(kind==='assets'){
+   if(request.method==='GET'){const row=db.prepare("SELECT * FROM user_world_assets WHERE user_id=? AND id=? AND status='ready'").get(session.user_id,id);if(!row)fail(404,'Asset not found.');const obj=await env.MEDIA.get(row.file_key);if(!obj)fail(503,'Private asset unavailable.');const meta=JSON.parse(row.metadata);return new Response(await obj.arrayBuffer(),{headers:{'Content-Type':meta.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}
+   if(request.method!=='POST')fail(405,'Method not allowed.');verifyUserWrite(request,env,session);const input=await readUserJSON(request,36*1024*1024);if(!/^[a-f0-9-]{36}$/.test(input.id||''))fail(400,'Valid asset ID required.');const file=await validateUpload(input.file),hash=sha(file.bytes);const text=(v,max)=>typeof v==='string'&&v.length<=max?v:'';const meta={kind:file.kind,format:file.format,mime:file.mime,bytes:file.bytes.length,name:text(input.name,100)||'World asset',description:text(input.description,2000),filename:'asset.'+file.format,tags:text(input.tags,300),source:'',purpose:input.purpose==='starter-world'?'starter-world':undefined,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+   let row=db.prepare('SELECT * FROM user_world_assets WHERE user_id=? AND id=?').get(session.user_id,input.id);if(row&&row.hash!==hash)fail(409,'Asset ID already has different bytes. Original preserved.');if(row?.status==='ready')return memberResponse({asset:assetDTO(row),cached:true});
+   const key=`user-worlds/${session.user_id}/${input.id}/${hash}/original.${file.format}`;if(!row){db.prepare('INSERT INTO user_world_assets VALUES(?,?,?,?,?,?,?)').run(session.user_id,input.id,'pending',key,hash,JSON.stringify(meta),new Date().toISOString());await db.flush();row={id:input.id,user_id:session.user_id,status:'pending',file_key:key,hash,metadata:JSON.stringify(meta)};}
+   const stored=await env.MEDIA.put(key,file.bytes,{onlyIf:{etagDoesNotMatch:'*'},httpMetadata:{contentType:file.mime}});if(!stored){const prior=await env.MEDIA.get(key);if(!prior||sha(Buffer.from(await prior.arrayBuffer()))!==hash)fail(409,'Stored asset integrity mismatch.');}db.prepare("UPDATE user_world_assets SET status='ready' WHERE user_id=? AND id=? AND hash=?").run(session.user_id,input.id,hash);await db.flush();return memberResponse({asset:assetDTO({...row,status:'ready'})},201);
+  }
+  const owned=()=>{const row=db.prepare('SELECT * FROM user_worlds WHERE owner_id=? AND id=?').get(session.user_id,id);if(!row)fail(404,'World not found.');return row;};
+  if(request.method==='GET'){
+   if(!id)return memberResponse({items:db.prepare('SELECT * FROM user_worlds WHERE owner_id=? ORDER BY updated_at DESC').all(session.user_id).map(r=>worldDTO(db,r))});
+   if(parts[4]==='history'){owned();const page=Math.max(1,Math.floor(Number(url.searchParams.get('page'))||1));return memberResponse({items:db.prepare('SELECT version,created_at FROM user_world_revisions WHERE owner_id=? AND world_id=? ORDER BY version DESC LIMIT 20 OFFSET ?').all(session.user_id,id,(page-1)*20),page});}
+   return memberResponse(worldDTO(db,owned()));
+  }
+  if(!['POST','PUT'].includes(request.method)||!id)fail(405,'Method not allowed.');verifyUserWrite(request,env,session);const input=await readUserJSON(request,600*1024),world=input.world;
+  if(!runtime().validateWorld)fail(503,'World validation unavailable.');if(!runtime().validateWorld(world)||world?.graph&&!runtime().validateWorld({...world,version:2})||world.id!==id||!Number.isSafeInteger(input.version)||input.version<0||input.version>=Number.MAX_SAFE_INTEGER||!/^[A-Za-z0-9_-]{16,80}$/.test(input.requestId||''))fail(400,'Invalid world or version.');
+  const clean=JSON.parse(JSON.stringify(world));delete clean.ownerId;delete clean.cloudVersion;
+  if((clean.graph?.characters||[]).some(c=>c.assetId||c.imageUrl))fail(400,'Convert legacy private AI references to owned asset snapshots before importing.');
+  const sidecars=input.sidecars||{};
+  // v1 partial progress objects remain explicit compatibility data; no defaults
+  // are inferred. Asset ownership/bytes and generic JSON bounds are shared.
+  validateNativeJSON(clean,sidecars,{legacy:true});
+  await validateNativeAssets({one:async(sql,...args)=>db.prepare(sql).get(...args)}, {id:session.user_id},clean,env.MEDIA);
+  const packed=JSON.stringify({world:clean,sidecars});if(Buffer.byteLength(packed)>512*1024)fail(413,'World and history exceed the 512 KiB record limit. Local data preserved.');const hash=sha(JSON.stringify({packed,version:input.version})),old=db.prepare('SELECT * FROM user_worlds WHERE owner_id=? AND id=?').get(session.user_id,id);
+  if(old?.last_op_id===input.requestId){if(old.last_op_hash!==hash)fail(409,'Operation ID reused with different content.');return memberResponse({...worldDTO(db,old),cached:true});}
+  if((old?.version||0)!==input.version)fail(409,'A newer server version exists. Reopen or resolve your local draft; nothing was overwritten.');const stamp=new Date().toISOString(),version=(old?.version||0)+1;
+  db.exec('BEGIN IMMEDIATE');try{if(old)db.prepare('UPDATE user_worlds SET data=?,version=?,last_op_id=?,last_op_hash=?,updated_at=? WHERE owner_id=? AND id=? AND version=?').run(packed,version,input.requestId,hash,stamp,session.user_id,id,old.version);else db.prepare('INSERT INTO user_worlds VALUES(?,?,?,?,?,?,?,?)').run(session.user_id,id,packed,version,input.requestId,hash,stamp,stamp);db.prepare('INSERT INTO user_world_revisions VALUES(?,?,?,?,?,?)').run(randomUUID(),session.user_id,id,version,packed,stamp);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}await db.flush();return memberResponse(worldDTO(db,db.prepare('SELECT * FROM user_worlds WHERE owner_id=? AND id=?').get(session.user_id,id)),old?200:201);
+ }catch(e){if(e.status)return memberResponse({error:e.message},e.status);throw e;}
+}

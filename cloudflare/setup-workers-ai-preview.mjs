@@ -1,0 +1,13 @@
+// Applies only an additive AI ledger to the hard-coded isolated Preview D1.
+import{readFile,writeFile,mkdir}from'node:fs/promises';import{parseEnv}from'node:util';import{createHash}from'node:crypto';
+const config=JSON.parse(await readFile('wrangler.cloudflare.preview.jsonc','utf8')),resources=JSON.parse(await readFile('/home/administrator/beyond-backups/cloudflare-preview/resources.json','utf8'));
+if(config.name!=='beyond-cloudflare-preview'||config.d1_databases[0].database_id!=='5b21c5ee-c783-40a4-b5ec-6e086b1aa6ed'||config.d1_databases[0].database_name!=='beyond-migration-preview'||resources.d1.uuid!==config.d1_databases[0].database_id||config.vars.TIGRIS_BUCKET_NAME!=='beyond-preview')throw Error('Preview isolation guard failed');
+const env={...parseEnv(await readFile('.env.local','utf8')),...process.env},root=`https://api.cloudflare.com/client/v4/accounts/${resources.account}`,headers={Authorization:`Bearer ${env.CLOUDFLARE_API_TOKEN}`,'Content-Type':'application/json'};
+async function api(path,body){const r=await fetch(root+path,{method:body?'POST':'GET',headers,...(body?{body:JSON.stringify(body)}:{})});let d;try{d=await r.json();}catch{throw Error('Cloudflare returned non-JSON');}if(!r.ok||!d.success)throw Error('Cloudflare operation rejected: HTTP '+r.status+' codes '+(d.errors||[]).map(e=>e.code).join(','));return d.result;}
+const query=sql=>api(`/d1/database/${resources.d1.uuid}/query`,{sql});
+const names=(await query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name NOT LIKE 'd1_%'"))[0].results.map(r=>r.name);if(names.some(n=>!/^\w+$/.test(n)))throw Error('Unexpected table name');
+const snapshot={at:new Date().toISOString(),tables:{}};for(const name of names)snapshot.tables[name]=(await query(`SELECT * FROM ${name}`))[0].results;
+const dir='/home/administrator/beyond-backups/cloudflare-preview/workers-ai';await mkdir(dir,{recursive:true,mode:0o700});const raw=JSON.stringify(snapshot),file=dir+'/before-ledger-'+Date.now()+'.json';await writeFile(file,raw,{mode:0o600,flag:'wx'});await writeFile(file+'.sha256',createHash('sha256').update(raw).digest('hex'),{mode:0o600,flag:'wx'});
+const production=await api('/workers/scripts/beyond/deployments');await writeFile(dir+'/production-before.json',JSON.stringify(production),{mode:0o600});
+await query(await readFile('cloudflare/migrations/0002_workers_ai.sql','utf8'));
+console.log(JSON.stringify({target:'beyond-cloudflare-preview',database:resources.d1.name,existingTablesBackedUp:names.length,additiveMigrationApplied:true,backup:file,productionReadOnly:true}));

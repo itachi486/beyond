@@ -481,3 +481,257 @@
     padding: 12px;
   }
 }
+
+/* Private operations palette; selectors stay inside the administrator workspace. */
+.admin-workspace,
+.admin-login,
+.admin-loading {
+  background: #f7f5ee;
+  color: #28352f;
+  color-scheme: light;
+}
+.admin-workspace {
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+.admin-workspace aside {
+  background: #e4eae1;
+  border-color: #ccd6c8;
+}
+.admin-workspace .admin-brand,
+.admin-login .admin-brand {
+  color: #344f40;
+}
+.admin-workspace .admin-eyebrow,
+.admin-login .admin-eyebrow {
+  color: #8a503a;
+}
+.admin-workspace .admin-account,
+.admin-workspace .admin-muted,
+.admin-login .admin-muted,
+.admin-workspace .admin-recent time,
+.admin-workspace td[data-label]:before {
+  color: #55675c;
+}
+.admin-workspace label,
+.admin-login label {
+  color: #34443b;
+}
+.admin-workspace .admin-panel,
+.admin-workspace .admin-stats article,
+.admin-login form {
+  background: #fffdf8;
+  border-color: #d8ded2;
+  box-shadow: 0 3px 14px #28352f08;
+}
+.admin-workspace input,
+.admin-workspace select,
+.admin-workspace textarea,
+.admin-login input {
+  background: #fffefa;
+  border-color: #aebcab;
+  color: #28352f;
+}
+.admin-workspace button:not(.icon-button),
+.admin-login button {
+  background: #edf1e8;
+  color: #304b3b;
+  border-color: #b8c7b1;
+}
+.admin-workspace button.admin-primary,
+.admin-login button.admin-primary {
+  background: #486448;
+  color: #fff;
+  border-color: #486448;
+}
+.admin-workspace button:disabled,
+.admin-login button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.admin-workspace nav button[aria-current] {
+  background: #3f5c47;
+  color: #fff;
+  border-color: #3f5c47;
+}
+.admin-workspace .admin-stats strong {
+  color: #395e44;
+  font-size: clamp(17px, 2vw, 32px);
+  overflow-wrap: anywhere;
+}
+.admin-workspace .admin-stats span,
+.admin-workspace th {
+  color: #546b59;
+}
+.admin-workspace td,
+.admin-workspace th,
+.admin-workspace .admin-link,
+.admin-workspace tr {
+  border-color: #d8ded2;
+}
+.admin-workspace a,
+.admin-login a {
+  color: #455f45;
+}
+.admin-workspace .admin-status {
+  background: #e8ece3;
+  color: #455744;
+}
+.admin-workspace .admin-status.published {
+  background: #dfecd9;
+  color: #315337;
+}
+.admin-workspace .admin-status.draft {
+  background: #f3e7d8;
+  color: #794c2f;
+}
+.admin-workspace .admin-status.archived {
+  background: #e9e6e0;
+  color: #5c6059;
+}
+.admin-workspace .admin-error,
+.admin-login .admin-error {
+  background: #faece6;
+  color: #883b2b;
+  border-color: #bf7a62;
+}
+.admin-workspace .admin-notice {
+  background: #e9f2e3;
+  color: #335439;
+  border-color: #91ad84;
+}
+.admin-workspace button:focus-visible,
+.admin-workspace input:focus-visible,
+.admin-workspace select:focus-visible,
+.admin-workspace a:focus-visible,
+.admin-login button:focus-visible,
+.admin-login input:focus-visible {
+  outline: 3px solid #a15d40;
+  outline-offset: 3px;
+}
+.admin-workspace .admin-scope {
+  border-left: 4px solid #9cac86;
+}
+.admin-detail {
+  display: grid;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.admin-detail dt {
+  font-weight: bold;
+  color: inherit;
+}
+.admin-detail dd {
+  margin: 0 0 14px;
+}
+.admin-asset-preview {
+  max-width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  background: repeating-conic-gradient(#d5dace 0% 25%, #f7f7f0 0% 50%) 0/24px
+    24px;
+}
+.admin-workspace .admin-toolbar input {
+  max-width: 100%;
+}
+@media (max-width: 900px) {
+  .admin-workspace {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+  .admin-workspace .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .admin-workspace {
+    grid-template-columns: 1fr;
+  }
+  .admin-workspace nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-workspace .admin-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .admin-workspace td {
+    overflow-wrap: anywhere;
+  }
+  .admin-detail {
+    font-size: 14px;
+  }
+}
+.admin-workspace .overlay {
+  background: #fffdf8;
+  color: #28352f;
+  border-color: #c9d3c1;
+}
+.admin-workspace .overlay-header {
+  border-color: #c9d3c1;
+}
+.admin-workspace .overlay .eyebrow {
+  color: #855038;
+}
+.admin-workspace .overlay p {
+  color: inherit;
+}
+.admin-login form > p {
+  color: #55675c;
+}
+.admin-workspace .admin-asset-preview {
+  width: min(100%, 320px);
+  min-height: 180px;
+}
+.admin-workspace .admin-panel:has(> table) {
+  overflow-x: auto;
+}
+.admin-workspace td {
+  overflow-wrap: anywhere;
+}
+.admin-login .admin-setup {
+  padding: 32px;
+  background: #fffdf8;
+  border: 1px solid #d8ded2;
+  border-radius: 8px;
+  box-shadow: 0 3px 14px #28352f08;
+  line-height: 1.7;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-setup h2 {
+  font:
+    28px Georgia,
+    serif;
+  color: #344f40;
+}
+.admin-setup li {
+  margin: 10px 0;
+}
+.admin-setup code {
+  display: inline-block;
+  padding: 5px 8px;
+  background: #e4eae1;
+  color: #28352f;
+}
+.admin-recovery {
+  margin-top: 20px;
+  font-size: 13px;
+}
+.admin-recovery summary {
+  cursor: pointer;
+  color: #455f45;
+}
+@media (max-width: 600px) {
+  .admin-login .admin-setup {
+    padding: 22px;
+  }
+  .admin-setup ol {
+    padding-left: 20px;
+  }
+}
+/* Initial-setup instructions must remain visible on mobile; the brand-intro
+   paragraph hiding rule above applies only to the older login presentation. */
+.admin-login > section.admin-setup > p:not(.admin-error) {
+  display: block;
+  color: #435849;
+}
+.admin-login .admin-recovery p {
+  color: #435849;
+}

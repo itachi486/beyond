@@ -1,0 +1,141 @@
+.reference-selection {
+  position: absolute;
+  inset: 0;
+  background: #080d20;
+  isolation: isolate;
+  overflow: hidden;
+}
+.selection-panorama {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  align-items: center;
+  scrollbar-width: thin;
+  scrollbar-color: #e6c58b55 #080d20;
+}
+.selection-artboard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1672/941;
+  max-height: 100svh;
+  margin: auto;
+}
+@media (min-aspect-ratio: 1672/941) {
+  .selection-artboard {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+  }
+}
+.selection-reference {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+.selection-effects,
+.selection-hit-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.selection-effects {
+  pointer-events: none;
+}
+.selection-hit-map g {
+  cursor: pointer;
+  outline: none;
+}
+.selection-hit-map polygon {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 1.4;
+  transition:
+    stroke 0.25s,
+    fill 0.25s;
+  pointer-events: all;
+}
+.selection-hit-map g:focus-visible polygon {
+  stroke: var(--region-color);
+  fill: color-mix(in srgb, var(--region-color) 7%, transparent);
+  filter: drop-shadow(0 0 9px var(--region-color));
+}
+.selection-hit-map g[aria-disabled="true"] {
+  cursor: progress;
+}
+.selection-fallback-title {
+  font:
+    32px Georgia,
+    serif;
+  fill: #fff4cf;
+  filter: drop-shadow(0 0 12px #78d9cc);
+  pointer-events: none;
+}
+.selection-overview,
+.selection-touch-hint {
+  display: none;
+}
+.selection-error {
+  position: absolute;
+  bottom: 30px;
+  left: 5%;
+  right: 5%;
+  text-align: center;
+  background: #080d20ee;
+  color: #e6c58b;
+  padding: 20px;
+}
+@media (max-aspect-ratio: 1/1) {
+  .selection-panorama {
+    display: block;
+  }
+  .selection-artboard {
+    height: 100svh;
+    width: calc(100svh * 1672 / 941);
+    max-height: none;
+    max-width: none;
+    margin: 0;
+  }
+  .selection-overview {
+    display: block;
+    position: absolute;
+    bottom: 22px;
+    right: 18px;
+    border: 1px solid #e6c58b77;
+    border-radius: 20px;
+    padding: 10px 15px;
+    background: #080d20b3;
+    color: #f2dfb6;
+    font-size: 11px;
+  }
+  .selection-touch-hint {
+    display: block;
+    position: absolute;
+    bottom: 25px;
+    left: 18px;
+    max-width: 42%;
+    font-size: 10px;
+    line-height: 1.6;
+    color: #e9edfa;
+    pointer-events: none;
+  }
+  .is-overview .selection-panorama {
+    display: grid;
+    align-items: center;
+  }
+  .is-overview .selection-artboard {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1672/941;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .selection-hit-map polygon {
+    transition: none;
+  }
+}

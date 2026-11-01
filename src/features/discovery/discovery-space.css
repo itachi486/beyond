@@ -1,0 +1,102 @@
+.discovery-space {
+  position: fixed;
+  inset: 0;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 65% 35%, #10182566, transparent 55%), #05090f;
+  color: #c5d3d4;
+}
+.discovery-space > canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.discovery-space .discovery-point {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #8fb5c46b;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font:
+    24px Georgia,
+    serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.discovery-space .discovery-point span {
+  transition:
+    color 0.7s,
+    text-shadow 0.7s,
+    transform 0.7s;
+}
+.discovery-space .discovery-point:is(:hover, :focus-visible, .is-open) span {
+  color: #d4e4de;
+  text-shadow: 0 0 16px #94cbd4;
+  transform: scale(1.1);
+}
+.discovery-space .discovery-point:focus-visible {
+  outline: 1px solid #7eabb25c;
+  outline-offset: 4px;
+}
+.discovery-space .discovery-point.is-found {
+  color: #9bbaa8a8;
+  font-size: 16px;
+}
+.discovery-space .discovery-fragment {
+  position: absolute;
+  pointer-events: none;
+  width: min(260px, 72vw);
+  transform: translate(-50%, 28px);
+  text-align: center;
+  animation: discovery-arrive 1.1s ease both;
+}
+.discovery-space .discovery-fragment.is-lower {
+  transform: translate(-50%, calc(-100% - 32px));
+}
+.discovery-space .discovery-glyph {
+  font:
+    34px Georgia,
+    serif;
+  color: #c0d3c3;
+  text-shadow: 0 0 24px #7cbaa466;
+}
+.discovery-space .discovery-fragment h1 {
+  margin: 14px 0 10px;
+  font:
+    20px/1.4 Georgia,
+    serif;
+  letter-spacing: 0.08em;
+  color: #d5ded9;
+}
+.discovery-space .discovery-fragment p {
+  margin: 0;
+  font:
+    14px/1.9 Georgia,
+    serif;
+  color: #8d9fa9;
+}
+@keyframes discovery-arrive {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .discovery-space *,
+  .discovery-space *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

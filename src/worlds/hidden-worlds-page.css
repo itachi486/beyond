@@ -1,0 +1,153 @@
+.hidden-world-page {
+  position: absolute;
+  inset: 0;
+  background: #071421;
+  isolation: isolate;
+  overflow: hidden;
+}
+.hidden-panorama {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-items: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.hidden-artboard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3/2;
+  max-height: 100svh;
+  margin: auto;
+}
+.hidden-artboard img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.hidden-artboard canvas,
+.hidden-hit-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hidden-artboard canvas {
+  pointer-events: none;
+}
+.hidden-hit-map g {
+  cursor: pointer;
+  outline: none;
+}
+.hidden-hit-map polygon {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 0.15;
+  pointer-events: all;
+}
+.hidden-hit-map g:focus-visible polygon {
+  stroke: var(--area-color);
+  fill: #ffffff12;
+}
+.hidden-controls {
+  position: absolute;
+  bottom: 16px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+.hidden-controls button {
+  pointer-events: auto;
+  background: #071421de;
+  border: 1px solid #bfe8ea88;
+  color: #fff;
+  padding: 12px;
+  font-size: 12px;
+}
+.hidden-overview-toggle {
+  display: none;
+}
+.hidden-page-header .wordmark {
+  visibility: hidden;
+}
+.hidden-page-header nav {
+  background: #071421bb;
+  border-radius: 6px;
+  padding: 4px;
+}
+.hidden-discoveries {
+  display: grid;
+  gap: 12px;
+}
+.hidden-world-page form {
+  display: grid;
+  gap: 16px;
+}
+.hidden-world-page form label {
+  display: grid;
+  gap: 8px;
+}
+.hidden-world-page input,
+.hidden-world-page textarea {
+  width: 100%;
+  padding: 12px;
+  background: #101d31;
+  color: white;
+  border: 1px solid #a6c7d5;
+}
+.hidden-world-page textarea {
+  min-height: 120px;
+}
+.hidden-load-error {
+  position: absolute;
+  bottom: 80px;
+  left: 5%;
+  background: #071421;
+  color: white;
+  padding: 16px;
+}
+@media (min-aspect-ratio: 3/2) {
+  .hidden-artboard {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+  }
+}
+@media (max-aspect-ratio: 1/1) {
+  .hidden-panorama {
+    display: block;
+  }
+  .hidden-artboard {
+    height: 100svh;
+    width: 150svh;
+    max-height: none;
+    margin: 0;
+  }
+  .hidden-overview-toggle {
+    display: block;
+  }
+  .hidden-overview .hidden-panorama {
+    display: grid;
+  }
+  .hidden-overview .hidden-artboard {
+    width: 100%;
+    height: auto;
+  }
+  .hidden-controls button {
+    font-size: 11px;
+  }
+  .hidden-page-header {
+    padding: 12px;
+  }
+  .hidden-page-header nav {
+    margin-left: auto;
+  }
+}
+.hidden-world-page:has(.overlay-shade) {
+  z-index: 20;
+}

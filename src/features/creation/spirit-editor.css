@@ -1,0 +1,810 @@
+.spirit-editor {
+  background: radial-gradient(ellipse at 55% 35%, #192747, #070c1d);
+}
+.spirit-layout {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) 290px;
+  flex: 1;
+  min-height: 0;
+}
+.spirit-library,
+.spirit-details {
+  overflow: auto;
+  background: #0a1428c9;
+  padding: 20px 16px;
+  border-right: 1px solid #9cc4d51c;
+}
+.spirit-library h2 {
+  font-size: 18px;
+  line-height: 1.4;
+}
+.spirit-library p,
+.spirit-details p {
+  color: #a9bdd2;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.spirit-template {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #8595c03b;
+  background: linear-gradient(135deg, #1b2b47bb, #171a35aa);
+  border-radius: 12px;
+  padding: 14px 9px;
+  margin-bottom: 10px;
+  color: #dbe9f5;
+  font-size: 12px;
+  text-align: left;
+  box-shadow: inset 0 1px #c4d8f00d;
+}
+.spirit-template-sigil {
+  font-size: 28px;
+  color: #93e1df;
+  text-shadow: 0 0 14px #5fdbcf66;
+}
+.template-collector .spirit-template-sigil {
+  color: #c7a7ee;
+}
+.template-creator .spirit-template-sigil {
+  color: #f5cd95;
+}
+.template-portal .spirit-template-sigil {
+  color: #9ecbff;
+}
+.template-custom .spirit-template-sigil {
+  color: #e7aad4;
+}
+.spirit-viewport {
+  position: relative;
+  min-width: 0;
+  min-height: 350px;
+  overflow: hidden;
+}
+.spirit-canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+.spirit-canvas canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+.spirit-view-tools {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+.spirit-view-tools button,
+.spirit-details button,
+.spirit-edge-access button {
+  border: 1px solid #90b9d14d;
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: #d9e7f5;
+  background: #11213cda;
+  font-size: 11px;
+}
+.spirit-anchors {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.spirit-anchors > button {
+  position: absolute;
+  left: var(--spirit-x, 50%);
+  top: var(--spirit-y, 50%);
+  transform: translate(-50%, -50%);
+  width: 76px;
+  height: 105px;
+  border: 0;
+  background: none;
+  pointer-events: none;
+  color: #b8ccdf;
+  outline: none;
+}
+.spirit-anchors > button span {
+  position: absolute;
+  top: calc(50% + var(--spirit-offset, 60px));
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  white-space: nowrap;
+  max-width: 150px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  text-shadow:
+    0 2px 6px #000,
+    0 0 8px #071328;
+}
+.spirit-anchors > button:focus-visible {
+  outline: 1px solid #c8e5ec;
+  border-radius: 45%;
+  background: #72cddb0d;
+}
+.spirit-anchors .is-selected span {
+  color: #f2d8a1;
+}
+.spirit-anchors .is-related span {
+  color: #a0ffdd;
+  text-shadow: 0 0 10px #84eecb;
+}
+.spirit-empty,
+.spirit-fallback {
+  position: absolute;
+  top: 45%;
+  left: 15%;
+  right: 15%;
+  text-align: center;
+  color: #c6cde1;
+  font:
+    22px Georgia,
+    serif;
+  pointer-events: none;
+}
+.spirit-fallback {
+  top: 15%;
+  font: 14px sans-serif;
+}
+.spirit-fallback-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 70px 15px;
+}
+.spirit-fallback-list > button {
+  position: static;
+  transform: none;
+  pointer-events: auto;
+  border: 1px solid #8ad0d1;
+  min-width: 120px;
+  width: auto;
+  height: 60px;
+  background: #102137;
+}
+.spirit-fallback-list > button span {
+  position: static;
+  transform: none;
+  white-space: normal;
+}
+.spirit-edge-access {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  max-height: 160px;
+  overflow: auto;
+  background: #0b172cdd;
+  border: 1px solid #839cba44;
+  border-radius: 8px;
+  padding: 9px;
+  color: #bfd3e5;
+  font-size: 11px;
+  max-width: 70%;
+}
+.spirit-edge-access button {
+  display: block;
+  margin: 8px 0;
+}
+.spirit-details h2 {
+  font-size: 23px;
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.spirit-details h3 {
+  font:
+    16px Georgia,
+    serif;
+  color: #dfcd9f;
+  margin: 25px 0 10px;
+}
+.spirit-library label,
+.spirit-details label {
+  display: grid;
+  gap: 7px;
+  font-size: 11px;
+  color: #b9c9d8;
+  margin: 13px 0;
+}
+.spirit-library input,
+.spirit-library textarea,
+.spirit-details :is(input, textarea, select),
+.spirit-content-modal select {
+  width: 100%;
+  min-width: 0;
+  background: #0c1930;
+  color: #e0e9f6;
+  border: 1px solid #7d9cb85c;
+  border-radius: 6px;
+  padding: 10px;
+}
+.spirit-details textarea,
+.spirit-library textarea {
+  min-height: 80px;
+  font: inherit;
+  font-size: 13px;
+}
+.spirit-details input[type="color"] {
+  height: 42px;
+}
+.spirit-details button {
+  margin: 5px 5px 5px 0;
+}
+.spirit-details summary,
+.spirit-library summary {
+  font-size: 12px;
+  color: #e1c9a0;
+  cursor: pointer;
+  padding: 10px 0;
+}
+.spirit-content {
+  border-top: 1px solid #8babc333;
+  padding: 13px 0;
+}
+.spirit-content h4 {
+  font:
+    16px Georgia,
+    serif;
+  color: #e4d4b0;
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.spirit-content p {
+  white-space: pre-wrap;
+  max-height: 260px;
+  overflow: auto;
+}
+.spirit-content a {
+  font-size: 12px;
+  color: #95dedb;
+  display: inline-block;
+  margin: 6px 10px 6px 0;
+}
+.spirit-description {
+  white-space: pre-wrap;
+}
+.spirit-exploring .spirit-layout {
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+.spirit-content-modal {
+  max-height: calc(100svh - 35px);
+  overflow: auto;
+}
+.spirit-content-modal h1 {
+  font-size: 28px;
+}
+.spirit-content-modal input,
+.spirit-content-modal textarea {
+  font-size: 14px;
+  padding: 10px;
+}
+.spirit-content-modal textarea {
+  min-height: 90px;
+}
+.spirit-content-modal form {
+  gap: 9px;
+}
+.spirit-content-modal label {
+  font-size: 12px;
+}
+.spirit-editor button:focus-visible {
+  outline: 2px solid #b2e4dc;
+  outline-offset: 3px;
+}
+@media (max-width: 1000px) {
+  .spirit-layout {
+    grid-template-columns: 145px minmax(0, 1fr);
+  }
+  .spirit-details {
+    grid-column: 1/-1;
+    max-height: 270px;
+    border-top: 1px solid #c0c9df22;
+  }
+  .spirit-layout {
+    overflow: auto;
+  }
+  .spirit-viewport {
+    min-height: 430px;
+  }
+  .spirit-exploring .spirit-layout {
+    grid-template-columns: 1fr;
+  }
+  .spirit-exploring .spirit-viewport {
+    min-height: 500px;
+  }
+}
+@media (max-width: 600px) {
+  .spirit-layout,
+  .spirit-exploring .spirit-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .spirit-library {
+    padding: 10px;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+  .spirit-library > h2,
+  .spirit-library > p {
+    display: none;
+  }
+  .spirit-template {
+    width: calc(50% - 6px);
+    display: inline-flex;
+    margin: 3px;
+    font-size: 10px;
+    padding: 7px;
+    min-height: 44px;
+  }
+  .spirit-template-sigil {
+    font-size: 22px;
+  }
+  .spirit-library details {
+    margin: 7px;
+  }
+  .spirit-viewport {
+    height: 410px;
+    flex-shrink: 0;
+  }
+  .spirit-details {
+    max-height: none;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+  .spirit-exploring .spirit-viewport {
+    min-height: 400px;
+  }
+  .spirit-anchors > button span {
+    font-size: 9px;
+    max-width: 90px;
+  }
+  .spirit-content-modal {
+    margin: 5px 0;
+  }
+  .spirit-editor .editor-tools button {
+    font-size: 10px;
+  }
+  .spirit-editor .editor-header h1 {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .spirit-anchors > button:not(.is-selected):not(:focus-visible) span {
+    display: none;
+  }
+}
+/* Exploration uses the same saved graph; only its transient presentation changes. */
+.spirit-exploring.spirit-no-selection .spirit-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+.spirit-exploring.spirit-no-selection .spirit-details {
+  display: none;
+}
+.spirit-exploring .spirit-details {
+  background: linear-gradient(145deg, #11213aef, #080f20f2);
+  border-left: 1px solid #80b5c63b;
+}
+.discovery-panel-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.discovery-panel-tools button {
+  border: 1px solid #829dbc55;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 11px;
+}
+.discovery-panel-tools button:first-child {
+  font-size: 23px;
+  min-width: 40px;
+}
+.spirit-exploring
+  .spirit-anchors
+  > button:not(.is-selected):not(:hover):not(:focus-visible)
+  span {
+  opacity: 0;
+  pointer-events: none;
+}
+.spirit-anchors > button:hover span {
+  opacity: 1;
+}
+.spirit-exploring .spirit-view-tools {
+  border: 1px solid #7da4c433;
+  background: #101b31a8;
+  backdrop-filter: blur(8px);
+  border-radius: 22px;
+  padding: 5px;
+}
+@media (min-width: 900px) {
+  .spirit-exploring .editor-tools > button:disabled,
+  .spirit-exploring .editor-tools > .backup-export {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .spirit-exploring.spirit-no-selection .spirit-layout {
+    display: flex;
+  }
+  .spirit-exploring .spirit-details {
+    max-height: 55svh;
+    overflow: auto;
+  }
+  .discovery-panel-tools button {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .spirit-anchors > button span {
+    transition: opacity 0.2s ease;
+  }
+}
+.spirit-exploring .editor-tools button[data-explore-action] {
+  font-size: 0;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 14px #7cbbd313;
+}
+.spirit-exploring .editor-tools button[data-explore-action]:before {
+  font-size: 21px;
+  content: "✎";
+}
+.spirit-exploring .editor-tools button[data-explore-action="save"]:before {
+  content: "◇";
+}
+.spirit-exploring .editor-tools button[data-explore-action="worlds"]:before {
+  content: "↩";
+}
+/* Exploration keeps only its three labelled action icons; editing/export remain in Edit Mode. */
+.spirit-exploring .editor-tools > button:not([data-explore-action]),
+.spirit-exploring .editor-tools > .backup-export {
+  display: none;
+}
+.spirit-exploring .editor-tools > button[data-explore-action] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 600px) {
+  .spirit-exploring .editor-header {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    gap: 10px;
+  }
+  .spirit-exploring .editor-header > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+  .spirit-exploring .editor-header h1 {
+    font-size: 18px;
+    overflow-wrap: anywhere;
+  }
+  .spirit-exploring .editor-header .creation-kicker {
+    font-size: 8px;
+  }
+  .spirit-exploring .editor-tools {
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+  .spirit-exploring .editor-tools button[data-explore-action] {
+    min-width: 36px;
+    min-height: 40px;
+    padding: 5px;
+  }
+  .spirit-exploring.spirit-no-selection .spirit-viewport {
+    height: auto;
+    flex: 1;
+    min-height: 400px;
+  }
+}
+.spirit-exploring .spirit-anchors > button span {
+  color: #fff3cf;
+  text-shadow:
+    0 2px 5px #020617,
+    0 0 14px #020617;
+  background: #081428b3;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+.hybrid-scenery-error {
+  position: absolute;
+  bottom: 52px;
+  left: 12px;
+  right: 12px;
+  padding: 8px 12px;
+  border: 1px solid #e0b77455;
+  background: #111c30df;
+  color: #f3ddb4;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* Clean cosmic exploration: controls are summoned by context-menu or keyboard focus. */
+.spirit-editor.spirit-exploring {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  padding: 0;
+  height: 100dvh;
+  overflow: hidden;
+}
+.spirit-editor.spirit-exploring .spirit-layout {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+.spirit-editor.spirit-exploring .spirit-viewport {
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+}
+.spirit-editor.spirit-exploring .editor-header {
+  position: absolute;
+  inset: 12px 12px auto;
+  z-index: 15;
+  background: #080f20eb;
+  padding: 12px;
+}
+.spirit-editor.spirit-exploring .spirit-details {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  bottom: 12px;
+  width: min(330px, calc(100% - 24px));
+  z-index: 12;
+  overflow: auto;
+  padding: 20px;
+}
+.scene-controls-trigger {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  opacity: 0;
+  padding: 12px;
+  background: #111b35;
+  color: white;
+  border: 1px solid #a1dfff;
+}
+.scene-controls-trigger:focus-visible {
+  opacity: 1;
+}
+.spirit-exploring .spirit-empty {
+  display: none;
+}
+
+.spirit-editor.spirit-exploring .spirit-view-tools {
+  top: auto;
+  bottom: 16px;
+  left: 16px;
+  z-index: 16;
+}
+
+.scene-controls-trigger {
+  pointer-events: none;
+}
+.scene-controls-trigger:focus-visible {
+  pointer-events: auto;
+}
+/* Final reference UI: six real actions, preserving the artwork beneath. */
+.cosmos-interface {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  color: #e6eeff;
+}
+.cosmos-wordmark {
+  position: absolute;
+  top: 3%;
+  left: 2.2%;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font:
+    30px Georgia,
+    serif;
+  letter-spacing: 6px;
+  text-shadow: 0 0 15px #76baff;
+}
+.cosmos-wordmark > span {
+  font-size: 65px;
+  line-height: 1;
+  color: #a6dcff;
+}
+.cosmos-wordmark small {
+  display: block;
+  font:
+    11px Arial,
+    sans-serif;
+  letter-spacing: 3px;
+  margin-top: 6px;
+}
+.cosmos-toolbar {
+  position: absolute;
+  top: 2.5%;
+  right: 1.8%;
+  display: flex;
+  gap: clamp(14px, 1.6vw, 27px);
+  pointer-events: auto;
+}
+.cosmos-toolbar button {
+  width: clamp(44px, 3.7vw, 64px);
+  aspect-ratio: 1;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--cosmos-accent) 65%, transparent);
+  border-radius: 50%;
+  color: var(--cosmos-accent);
+  background: radial-gradient(circle, #202b5fa0, #080d29b8);
+  box-shadow:
+    0 0 17px color-mix(in srgb, var(--cosmos-accent) 25%, transparent),
+    inset 0 0 12px #758fff35;
+}
+.cosmos-toolbar svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 5px currentColor);
+}
+.cosmos-toolbar button:is(:hover, :focus-visible),
+.cosmos-toolbar .is-current {
+  outline: 1px solid var(--cosmos-accent);
+  outline-offset: 7px;
+  box-shadow:
+    0 0 25px var(--cosmos-accent),
+    inset 0 0 16px #5dbdff66;
+}
+.cosmos-explore-tip {
+  position: absolute;
+  top: 13.3%;
+  left: 65.9%;
+  box-sizing: border-box;
+  width: 13.5%;
+  padding: 16px 20px 20px;
+  border: 1px solid #b6a3ffb0;
+  border-radius: 18px;
+  background: #050b22c9;
+  box-shadow: 0 0 17px #7f72dd44;
+}
+.cosmos-explore-tip > span {
+  color: #9be3ff;
+  font-size: 26px;
+  text-shadow: 0 0 10px #56aaff;
+}
+.cosmos-explore-tip h2 {
+  font:
+    20px Georgia,
+    serif;
+  margin: 6px 0;
+}
+.cosmos-explore-tip p {
+  font:
+    14px/1.5 Arial,
+    sans-serif;
+  margin: 0;
+}
+.spirit-editor.spirit-exploring .editor-header {
+  top: 105px;
+}
+.spirit-viewport {
+  background: #080c25 url("/infinite-cosmos-clean.webp") center / cover
+    no-repeat;
+}
+@media (max-width: 600px) {
+  .cosmos-wordmark {
+    font-size: 17px;
+    gap: 5px;
+    top: 14px;
+  }
+  .cosmos-wordmark > span {
+    font-size: 35px;
+  }
+  .cosmos-wordmark small {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+  .cosmos-toolbar {
+    top: 72px;
+    left: 12px;
+    right: 12px;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .cosmos-toolbar button {
+    width: 42px;
+    padding: 10px;
+  }
+  .cosmos-explore-tip {
+    top: 140px;
+    left: 12px;
+    width: 160px;
+    padding: 12px;
+  }
+  .spirit-editor.spirit-exploring .editor-header {
+    top: 140px;
+  }
+}
+
+.cosmos-explore-tip > svg {
+  width: 30px;
+  height: 30px;
+  color: #9be3ff;
+  filter: drop-shadow(0 0 7px #56aaff);
+}
+.cosmos-explore-tip h2 {
+  color: #eef3ff;
+}
+.cosmos-wordmark {
+  top: 2.8%;
+  left: 1.9%;
+  gap: 13px;
+  font-size: 28px;
+  letter-spacing: 5px;
+}
+.cosmos-emblem {
+  width: 59px;
+  height: 65px;
+  color: #a1dcff;
+  filter: drop-shadow(0 0 6px #4ba9ff);
+}
+.cosmos-wordmark small {
+  font-size: 11px;
+  letter-spacing: 2.5px;
+}
+.cosmos-toolbar {
+  top: 3.4%;
+  right: 2.03%;
+  gap: clamp(14px, 1.79vw, 30px);
+}
+.cosmos-toolbar button {
+  width: clamp(44px, 3.59vw, 60px);
+  padding: 13px;
+}
+.cosmos-toolbar .is-current {
+  outline-offset: 6px;
+  box-shadow:
+    0 0 22px #58aaff,
+    inset 0 0 16px #5dbdff66;
+}
+@media (max-width: 600px) {
+  .cosmos-wordmark {
+    font-size: 17px;
+    gap: 7px;
+  }
+  .cosmos-emblem {
+    width: 34px;
+    height: 40px;
+  }
+  .cosmos-wordmark small {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+  .cosmos-toolbar {
+    top: 72px;
+    left: 12px;
+    right: 12px;
+    gap: 8px;
+  }
+  .cosmos-toolbar button {
+    width: 42px;
+    padding: 10px;
+  }
+}
+
+.spirit-exploring .spirit-viewport {
+  background-image: none;
+}

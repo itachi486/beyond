@@ -1,0 +1,103 @@
+.central-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #03091de8;
+}
+.central-picker {
+  position: relative;
+  width: min(880px, 100%);
+  max-height: 92dvh;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 36px 24px;
+  color: #e6edff;
+  background: linear-gradient(140deg, #16254a, #070f26);
+  border: 1px solid #76c6f377;
+  border-radius: 16px;
+}
+.central-picker h1 {
+  font-family: Georgia, serif;
+  color: #e5dcff;
+}
+.central-picker label {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+.central-picker input {
+  padding: 12px;
+  background: #0a1430;
+  color: #fff;
+  border: 1px solid #6a82b4;
+  min-width: 0;
+}
+.central-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.central-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #547da5 !important;
+  background: #13213b !important;
+  color: #e6efff !important;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.central-card img {
+  width: 100%;
+  height: 115px;
+  object-fit: contain;
+}
+.central-card[aria-pressed="true"] {
+  box-shadow: 0 0 18px #7fdcf355;
+}
+.central-model-icon {
+  font-size: 55px;
+  line-height: 115px;
+  align-self: center;
+  color: #c7a7fc;
+}
+.central-pages {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.central-selection {
+  margin-top: 24px;
+  border-top: 1px solid #547da5;
+  padding-top: 16px;
+}
+.central-selection .upload-preview {
+  max-height: 260px;
+}
+.central-picker button:focus-visible,
+.central-picker input:focus-visible {
+  outline: 2px solid #f3d995;
+  outline-offset: 3px;
+}
+@media (max-width: 480px) {
+  .central-picker {
+    padding: 36px 16px;
+  }
+  .central-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .central-card {
+    font-size: 12px;
+  }
+  .central-picker h1 {
+    font-size: 27px;
+  }
+}

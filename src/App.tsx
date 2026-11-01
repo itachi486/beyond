@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import "./features/account/account.css";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { WorldId } from "./data/universe";
@@ -11,6 +13,8 @@ import { HeroScene } from "./components/HeroScene";
 import { usePortalTravel } from "./hooks/usePortalTravel";
 const WorldScene = lazy(() => import("./worlds/WorldScene"));
 const HubScene = lazy(() => import("./worlds/HubScene"));
+const HiddenWorldsPage = lazy(() => import("./worlds/HiddenWorldsPage"));
+const WorldSelection = lazy(() => import("./worlds/WorldSelection"));
 type Panel = "bookmarks" | "history" | "settings" | "worlds" | null;
 export default function App() {
   const { worlds, discoveries, connections, defaultLanguage } = useUniverse();
@@ -28,6 +32,7 @@ export default function App() {
     ),
   );
   const t = messages[locale];
+  const [immersiveExplore, setImmersiveExplore] = useState(false);
   const [bookmarks, setBookmarks] = useState<string[]>(() =>
     read("bookmarks", [], ids).filter((id) => getDiscovery(id)),
   );
@@ -71,6 +76,17 @@ export default function App() {
     location.pathname === "/explore" ||
     !!world?.hubKey ||
     searchParams.get("from") === "hub";
+  const imageSelection =
+    location.pathname === "/explore" &&
+    !searchParams.get("world") &&
+    searchParams.get("view") !== "walk" &&
+    !discovery;
+  const hiddenPage =
+    !discovery &&
+    searchParams.get("view") !== "walk" &&
+    (world?.hubKey === "hidden-worlds" ||
+      (location.pathname === "/explore" &&
+        searchParams.get("world") === "realm-hidden-worlds"));
   const invalid = !home && !world && !hubRoute;
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -90,11 +106,12 @@ export default function App() {
   }, [discovery, locale]);
   useEffect(() => {
     if (
-      (world || hubRoute) &&
+      !hiddenPage &&
+      (world || (hubRoute && !imageSelection)) &&
       !read("tutorial", false, (v): v is boolean => typeof v === "boolean")
     )
       setTutorial(true);
-  }, [!!world || hubRoute]);
+  }, [!!world || (hubRoute && !imageSelection), hiddenPage]);
   useEffect(() => {
     setShared("");
     setPanel(null);
@@ -193,7 +210,32 @@ export default function App() {
       className={`${home ? "app threshold" : "app exploring"}${transition ? " entering" : ""}${motionReduced ? " low-motion" : ""}`}
     >
       {home && <HeroScene reduced={motionReduced} simple={simple} />}
-      {hubRoute ? (
+      {imageSelection ? (
+        <Suspense fallback={<p className="scene-loading">{t.loading}</p>}>
+          <WorldSelection
+            locale={locale}
+            reduced={motionReduced}
+            simple={simple}
+            blocked={!!(panel || discovery)}
+            onSelect={(id) =>
+              navigate("/explore?world=" + id + "&arrival=direct")
+            }
+          />
+        </Suspense>
+      ) : hiddenPage ? (
+        <Suspense fallback={<p className="scene-loading">{t.loading}</p>}>
+          <HiddenWorldsPage
+            onExploreChange={setImmersiveExplore}
+            locale={locale}
+            reduced={motionReduced}
+            simple={simple}
+            blocked={!!panel}
+            onDiscovery={open}
+            onSaved={() => setPanel("bookmarks")}
+            onBack={() => navigate("/explore")}
+          />
+        </Suspense>
+      ) : hubRoute ? (
         <SceneBoundary key="hub" message={t.fallback}>
           <Suspense fallback={<p className="scene-loading">{t.loading}</p>}>
             <HubScene
@@ -202,9 +244,14 @@ export default function App() {
               reduced={motionReduced}
               blocked={!!(panel || discovery || tutorial)}
               selected={world?.hubKey ? world.id : searchParams.get("world")}
+              arriveImmediately={searchParams.get("arrival") === "direct"}
               onWorld={(id) => {
                 if (searchParams.get("world") !== id)
-                  navigate("/explore?world=" + id);
+                  navigate(
+                    "/explore?world=" +
+                      id +
+                      (searchParams.get("view") === "walk" ? "&view=walk" : ""),
+                  );
               }}
               onDiscovery={open}
             />
@@ -227,48 +274,50 @@ export default function App() {
           </SceneBoundary>
         )
       )}
-      <header
-        className="site-header"
-        inert={!!(panel || tutorial || discovery)}
-      >
-        <button
-          className="wordmark"
-          aria-label="BEYOND"
-          onClick={() => navigate("/")}
+      {!immersiveExplore && (
+        <header
+          className={`site-header${hiddenPage ? " hidden-page-header" : ""}`}
+          inert={!!(panel || tutorial || discovery)}
         >
-          BEY<span className="word-orbit">O</span>ND
-        </button>
-        <nav aria-label={t.explore}>
-          {language}
-          <span className="header-divider" />
-          {!home && (
-            <>
-              <button
-                className="icon-button"
-                aria-label={t.explore}
-                onClick={() => setPanel("worlds")}
-              >
-                <Icon name="compass" />
-              </button>
-              <button
-                className="icon-button"
-                aria-label={t.bookmarks}
-                onClick={() => setPanel("bookmarks")}
-              >
-                <Icon name="bookmark" />
-                {bookmarks.length > 0 && <i className="dot" />}
-              </button>
-            </>
-          )}
           <button
-            className="icon-button"
-            aria-label={t.menu}
-            onClick={() => setPanel("settings")}
+            className="wordmark"
+            aria-label="BEYOND"
+            onClick={() => navigate("/")}
           >
-            <Icon name="menu" />
+            BEY<span className="word-orbit">O</span>ND
           </button>
-        </nav>
-      </header>
+          <nav aria-label={t.explore}>
+            {language}
+            <span className="header-divider" />
+            {!home && (
+              <>
+                <button
+                  className="icon-button"
+                  aria-label={t.explore}
+                  onClick={() => setPanel("worlds")}
+                >
+                  <Icon name="compass" />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={t.bookmarks}
+                  onClick={() => setPanel("bookmarks")}
+                >
+                  <Icon name="bookmark" />
+                  {bookmarks.length > 0 && <i className="dot" />}
+                </button>
+              </>
+            )}
+            <button
+              className="icon-button"
+              aria-label={t.menu}
+              onClick={() => setPanel("settings")}
+            >
+              <Icon name="menu" />
+            </button>
+          </nav>
+        </header>
+      )}
       {home && (
         <>
           <section className="hero-copy">
@@ -289,6 +338,7 @@ export default function App() {
               {t.enter}
               <Icon name="arrow" />
             </button>
+            <nav className="account-nav" aria-label="Account"><Link to="/register">Create Free Account</Link><Link to="/login">Log In</Link><Link to="/my-worlds">My Worlds</Link></nav>
             <p className="atmosphere">{t.atmosphere}</p>
           </section>
         </>
@@ -485,7 +535,7 @@ export default function App() {
           </article>
         </Overlay>
       )}
-      {tutorial && (world || hubRoute) && (
+      {tutorial && !imageSelection && (world || hubRoute) && (
         <Overlay
           toolbar={language}
           title={t.tutorial}

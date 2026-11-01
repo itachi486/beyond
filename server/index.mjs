@@ -11,6 +11,8 @@ const types = {
   ".webp": "image/webp",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
   ".json": "application/json",
 };
 export function startServer({
@@ -64,7 +66,7 @@ export function startServer({
           res.setHeader("Referrer-Policy", "same-origin");
           res.setHeader(
             "Content-Security-Policy",
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
           );
           res.setHeader("Cache-Control", "no-store");
           res.writeHead(200, {

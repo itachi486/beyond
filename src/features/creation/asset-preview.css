@@ -1,0 +1,30 @@
+.upload-preview {
+  height: 310px;
+  position: relative;
+  background: #101a30;
+  border: 1px solid #91b0c055;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.upload-preview canvas {
+  display: block;
+  touch-action: none;
+}
+.upload-preview p {
+  position: absolute;
+  inset: 20px;
+  text-align: center;
+  color: #f2c9ac;
+}
+.upload-preview > img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #101a30;
+}
+@media (max-width: 600px) {
+  .upload-preview {
+    height: 250px;
+  }
+}

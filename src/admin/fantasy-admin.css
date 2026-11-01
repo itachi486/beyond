@@ -1,0 +1,946 @@
+/* Authenticated workspace only. Cosmic login selectors and assets stay untouched. */
+.admin-workspace {
+  --admin-bg: #f7f6f0;
+  --admin-panel: #fffefa;
+  --admin-text: #223c40;
+  --admin-muted: #607477;
+  --admin-border: #dedfd7;
+  color-scheme: light;
+  background: #f7f6f0;
+  color: #223c40;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  grid-template-rows: 68px 1fr;
+  min-height: 100dvh;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.admin-workspace * {
+  box-sizing: border-box;
+}
+.admin-workspace button,
+.admin-workspace input,
+.admin-workspace select,
+.admin-workspace textarea {
+  font: inherit;
+}
+.admin-workspace a {
+  color: #2e7065;
+}
+.admin-workspace h1,
+.admin-workspace h2,
+.admin-workspace h3 {
+  color: #203c3d;
+  text-shadow: none;
+}
+.admin-workspace h1 {
+  font-family: Georgia, serif;
+  font-size: 30px;
+}
+.admin-workspace h2 {
+  font-size: 16px;
+  font-family: Georgia, serif;
+  margin: 0 0 16px;
+}
+.admin-workspace button {
+  background: #fafaf6;
+  color: #244345;
+  border: 1px solid #d8ded5;
+  border-radius: 6px;
+  box-shadow: none;
+  min-height: 36px;
+  cursor: pointer;
+  padding: 7px 12px;
+}
+.admin-workspace button:hover:not(:disabled) {
+  background: #e6eee6;
+  border-color: #8aaa99;
+}
+.admin-workspace button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.admin-workspace :focus-visible {
+  outline: 3px solid #438a78;
+  outline-offset: 3px;
+}
+.admin-workspace input,
+.admin-workspace select,
+.admin-workspace textarea {
+  background: #fffefa;
+  color: #223c40;
+  border: 1px solid #cbd5cb;
+  border-radius: 5px;
+  box-shadow: none;
+}
+.admin-workspace .admin-muted,
+.admin-workspace small {
+  color: #647677;
+}
+.admin-workspace .admin-error {
+  background: #fff0eb;
+  color: #942f26;
+  border: 1px solid #e5bab1;
+}
+.admin-workspace .admin-notice {
+  color: #27624d;
+  background: #eaf2e8;
+  border-color: #c3d8c1;
+}
+.admin-workspace .admin-primary {
+  background: #4d806b;
+  color: white;
+  border-color: #4d806b;
+}
+.admin-workspace .admin-danger {
+  color: #a43d31;
+  border-color: #debdb4;
+  background: #fff7f2;
+}
+.admin-workspace .admin-danger:hover:not(:disabled) {
+  color: #fff;
+  background: #a43d31;
+}
+.admin-workspace .admin-actions {
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.fantasy-topbar {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 28px;
+  border-bottom: 1px solid #e3e1d8;
+  background: #fcfaf5;
+  position: relative;
+  z-index: 3;
+}
+.fantasy-brand {
+  font-family: Georgia, serif;
+  font-size: 28px !important;
+  text-decoration: none !important;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #203d3c !important;
+}
+.fantasy-brand > span {
+  color: #4f8971;
+  font-size: 38px;
+}
+.fantasy-brand small {
+  font-size: 17px;
+  font-weight: normal;
+}
+.fantasy-topbar time {
+  margin-left: auto;
+  font-size: 11px;
+  color: #587174;
+}
+.fantasy-account {
+  border-left: 1px solid #dce0d8;
+  padding-left: 20px;
+  max-width: 260px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.admin-workspace > .fantasy-topbar .fantasy-menu-toggle {
+  display: none;
+}
+.admin-workspace > aside {
+  position: relative;
+  grid-row: 2;
+  background: #f5f3eb;
+  color: #2b494b;
+  border-right: 1px solid #e0e1d7;
+  padding: 22px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.admin-workspace > aside:after {
+  content: "✧";
+  position: absolute;
+  bottom: 120px;
+  left: 40px;
+  pointer-events: none;
+  font-size: 150px;
+  line-height: 1;
+  color: #d7d4c4;
+  opacity: 0.55;
+}
+.admin-workspace > aside > .admin-brand,
+.admin-workspace > aside > .admin-eyebrow {
+  display: none;
+}
+.admin-workspace > aside nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-workspace > aside nav button {
+  background: transparent;
+  border: 0;
+  text-align: left;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-height: 43px;
+  padding: 10px 12px;
+  color: #304e51;
+  font-size: 14px;
+}
+.admin-workspace > aside nav button[aria-current="page"] {
+  background: #d5e2d9;
+  color: #215449;
+}
+.admin-workspace .cosmic-nav-icon {
+  width: 22px;
+  height: 22px;
+  color: inherit;
+  filter: none;
+}
+.admin-workspace .admin-account {
+  margin-top: auto;
+  padding-top: 40px;
+  color: #587174;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  position: relative;
+  z-index: 1;
+}
+.admin-workspace > .admin-main {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  margin: 0;
+  padding: 25px 24px 16px;
+  background:
+    linear-gradient(105deg, #f7f6f0 28%, #f7f6f000 100%) top/100% 125px
+      no-repeat,
+    linear-gradient(#ffffffb8, #f7f6f0) top/100% 170px no-repeat,
+    url("/hidden-worlds-reference.png") 65% 24%/100% auto no-repeat,
+    #f7f6f0;
+}
+.admin-workspace .cosmic-topbar {
+  display: none;
+}
+.admin-workspace .admin-heading {
+  margin: 0 0 20px;
+  min-height: 70px;
+  border: 0;
+  padding: 0;
+  align-items: flex-start;
+}
+.admin-workspace .admin-heading h1 {
+  margin: 0;
+}
+.admin-workspace .admin-heading .admin-eyebrow {
+  font-size: 9px;
+  color: #557674;
+}
+.admin-workspace .admin-heading > a {
+  font-size: 12px;
+  color: #39685d;
+}
+.fantasy-scope {
+  font-size: 11px;
+  max-width: 900px;
+  margin: 0 0 16px;
+}
+.fantasy-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.fantasy-card,
+.admin-workspace .admin-panel,
+.admin-workspace .cosmic-panel {
+  background: #fffefaeb;
+  border: 1px solid #dedfd5;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px #30463209;
+  color: #294347;
+  padding: 17px;
+  min-width: 0;
+}
+.fantasy-metric {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 118px;
+}
+.fantasy-metric-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  border-radius: 50%;
+  background: #5a927e;
+  color: white;
+}
+.fantasy-metric-icon svg {
+  width: 26px;
+}
+.fantasy-metric:nth-child(3) .fantasy-metric-icon {
+  background: #db9a62;
+}
+.fantasy-metric strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #233e39;
+}
+.fantasy-metric:nth-child(4) strong {
+  font-size: 21px;
+}
+.fantasy-metric small {
+  display: block;
+  font-size: 10px;
+}
+.fantasy-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(210px, 1fr);
+  gap: 17px;
+}
+.fantasy-primary {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+.fantasy-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(190px, 1fr);
+  gap: 16px;
+}
+.fantasy-section-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.fantasy-section-heading h2 {
+  margin: 0;
+}
+.admin-workspace .fantasy-section-heading button {
+  border: 0;
+  background: none;
+  font-size: 10px;
+  padding: 3px;
+  min-height: 28px;
+  white-space: nowrap;
+}
+.fantasy-legend {
+  display: flex;
+  gap: 15px;
+  font-size: 10px;
+  margin: 15px 0;
+}
+.fantasy-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.fantasy-legend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.fantasy-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 200px;
+}
+.fantasy-chart text {
+  font-size: 10px;
+  fill: #5b7479;
+}
+.fantasy-statistics {
+  margin: 0;
+}
+.fantasy-statistics > div {
+  padding: 12px 0;
+  border-bottom: 1px solid #e9e8df;
+}
+.fantasy-statistics dt {
+  font-size: 11px;
+  color: #687b7b;
+}
+.fantasy-statistics dd {
+  margin: 3px 0;
+  font-weight: 600;
+  font-size: 15px;
+}
+.admin-workspace .fantasy-compass {
+  background: none;
+  color: #aab49e;
+  font-size: 48px;
+  width: auto;
+  height: 65px;
+  margin: auto;
+  border: none;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  box-shadow: none;
+}
+.fantasy-recent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.admin-workspace table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  color: #36565a;
+  background: transparent;
+}
+.admin-workspace th {
+  font-weight: normal;
+  background: #f5f5ef;
+  color: #557174;
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.admin-workspace td,
+.admin-workspace th {
+  padding: 9px 8px;
+  border-color: #eeede6;
+  overflow-wrap: anywhere;
+}
+.admin-workspace .fantasy-record {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  background: transparent;
+  min-height: 28px;
+  font-size: 11px;
+}
+.fantasy-record img {
+  width: 32px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #edf0e7;
+}
+.fantasy-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.fantasy-system {
+  font-size: 12px;
+  margin: 0;
+}
+.fantasy-system > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e9e8df;
+}
+.fantasy-system dd {
+  margin: 0;
+  color: #4d8871;
+}
+.fantasy-system + small {
+  font-size: 10px;
+  display: block;
+  margin-top: 10px;
+}
+.fantasy-quick {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.admin-workspace .fantasy-quick button {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  text-align: left;
+  font-size: 12px;
+  padding: 11px;
+  background: #fcfbf7;
+}
+.fantasy-quick svg {
+  width: 23px;
+  height: 23px;
+  flex-shrink: 0;
+}
+.fantasy-about {
+  min-height: 220px;
+  background:
+    linear-gradient(#fffdf4 0%, #fffdf4aa 35%, #ffffff00),
+    url("/hidden-worlds-reference.png") center/cover;
+}
+.fantasy-about p {
+  font-size: 11px;
+  max-width: 190px;
+  color: #456466;
+}
+.fantasy-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 10px;
+}
+.fantasy-events li {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 7px 0;
+  border-bottom: 1px solid #e9e8df;
+}
+.fantasy-events li span {
+  grid-column: 1/-1;
+  overflow-wrap: anywhere;
+  color: #66817b;
+}
+.fantasy-updated {
+  font-size: 10px;
+  color: #69817d;
+  text-align: right;
+}
+.fantasy-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 10px;
+  color: #647d7b;
+  margin-top: 25px;
+}
+.admin-workspace .cosmic-editorial-shortcuts {
+  background: #eeeee4;
+  color: #3e5f55;
+  border-color: #d8ded1;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.admin-workspace .cosmic-editorial-shortcuts strong {
+  color: #345c4a;
+}
+.admin-workspace .admin-status {
+  color: #3a6c51;
+  background: #edf2e7;
+}
+.admin-workspace .admin-toolbar {
+  flex-wrap: wrap;
+}
+.admin-workspace .admin-character-grid {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.admin-workspace .admin-central-thumb {
+  background: #e8ece2;
+}
+.admin-workspace .admin-pagination {
+  flex-wrap: wrap;
+}
+.admin-workspace .admin-panel {
+  overflow-x: auto;
+}
+.admin-workspace .admin-editor {
+  min-width: 0;
+}
+.admin-workspace .admin-editor fieldset {
+  background: #fffdf7;
+  border: 1px solid #dcded3;
+  color: #2f514c;
+  min-width: 0;
+}
+.admin-workspace .overlay {
+  background: #fffdf7;
+  color: #254340;
+  border: 1px solid #becfc0;
+  box-shadow: 0 20px 100px #203d3c44;
+}
+.admin-workspace .overlay-shade {
+  background: #122c38aa;
+  backdrop-filter: blur(5px);
+}
+.admin-workspace .overlay-header,
+.admin-workspace .eyebrow {
+  color: #426b5f;
+}
+.admin-workspace .admin-delete-dialog .overlay {
+  width: min(620px, calc(100vw - 28px));
+}
+.admin-delete-dialog code {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.admin-delete-dialog p {
+  line-height: 1.7;
+}
+.admin-workspace .cosmic-model-placeholder {
+  background: #e9eee4;
+  color: #4f7d66;
+}
+@media (min-width: 1650px) {
+  .admin-workspace {
+    grid-template-columns: 255px 1fr;
+  }
+  .admin-workspace > .admin-main {
+    padding: 28px 30px;
+  }
+  .fantasy-metric {
+    min-height: 130px;
+  }
+  .fantasy-metric strong {
+    font-size: 30px;
+  }
+}
+@media (max-width: 1100px) {
+  .admin-workspace {
+    grid-template-columns: 185px 1fr;
+  }
+  .fantasy-layout {
+    grid-template-columns: 1fr;
+  }
+  .fantasy-right {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .fantasy-metrics {
+    gap: 10px;
+  }
+  .fantasy-metric {
+    padding: 12px;
+    gap: 8px;
+  }
+  .fantasy-metric-icon {
+    width: 30px;
+    height: 30px;
+  }
+  .fantasy-metric strong {
+    font-size: 22px;
+  }
+  .fantasy-metric > div > span {
+    font-size: 11px;
+  }
+  .fantasy-metric:nth-child(4) strong {
+    font-size: 16px;
+  }
+}
+@media (max-width: 800px) {
+  .admin-workspace {
+    display: block;
+  }
+  .fantasy-topbar {
+    height: 64px;
+    padding: 0 14px;
+    gap: 12px;
+  }
+  .fantasy-brand {
+    font-size: 22px !important;
+  }
+  .fantasy-brand small {
+    font-size: 12px;
+  }
+  .fantasy-topbar time {
+    display: none;
+  }
+  .fantasy-topbar .fantasy-account {
+    margin-left: auto;
+    font-size: 10px;
+    max-width: 180px;
+  }
+  .admin-workspace > .fantasy-topbar .fantasy-menu-toggle {
+    display: block;
+    order: 3;
+  }
+  .admin-workspace > aside {
+    display: none;
+  }
+  .admin-workspace.admin-menu-open > aside {
+    display: flex;
+    position: fixed;
+    inset: 64px auto 0 0;
+    width: 260px;
+    z-index: 40;
+    overflow: auto;
+    box-shadow: 20px 10px 60px #1d383c44;
+  }
+  .admin-workspace > .admin-main {
+    padding: 18px 14px;
+  }
+  .fantasy-recent {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fantasy-charts {
+    grid-template-columns: minmax(0, 1.8fr) minmax(170px, 1fr);
+  }
+}
+@media (max-width: 580px) {
+  .fantasy-account {
+    display: none;
+  }
+  .fantasy-topbar .fantasy-menu-toggle {
+    margin-left: auto;
+  }
+  .fantasy-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fantasy-charts,
+  .fantasy-recent {
+    grid-template-columns: 1fr;
+  }
+  .fantasy-right {
+    grid-template-columns: 1fr;
+  }
+  .fantasy-metric {
+    min-height: 118px;
+  }
+  .fantasy-metric strong {
+    font-size: 23px;
+  }
+  .fantasy-card {
+    padding: 14px;
+  }
+  .admin-workspace .admin-heading {
+    display: block;
+  }
+  .admin-workspace h1 {
+    font-size: 27px;
+  }
+  .admin-workspace .admin-heading > a {
+    display: inline-block;
+    margin-top: 5px;
+  }
+  .fantasy-footer {
+    flex-wrap: wrap;
+  }
+  .admin-workspace table {
+    font-size: 11px;
+  }
+  .admin-workspace .fantasy-recent table tr {
+    display: table-row;
+  }
+  .admin-workspace .fantasy-recent table td,
+  .admin-workspace .fantasy-recent table th {
+    display: table-cell;
+    padding: 8px 5px;
+  }
+  .admin-workspace .fantasy-recent table td:before {
+    display: none;
+  }
+  .admin-workspace .fantasy-recent table thead {
+    display: table-header-group;
+  }
+  .admin-workspace .admin-toolbar > * {
+    max-width: 100%;
+  }
+  .admin-workspace input,
+  .admin-workspace textarea,
+  .admin-workspace select {
+    max-width: 100%;
+  }
+}
+.admin-workspace .fantasy-right {
+  background: none;
+  padding: 0;
+  border: 0;
+  position: static;
+}
+/* Override the older high-specificity dark control rules only inside the workspace. */
+.admin-workspace button:not(.icon-button) {
+  background: #fafaf6;
+  color: #244345;
+  border: 1px solid #d8ded5;
+  box-shadow: none;
+}
+.admin-workspace > aside nav button:not(.icon-button) {
+  background: transparent;
+  color: #304e51;
+  border: 0;
+}
+.admin-workspace > aside nav button[aria-current="page"] {
+  background: #d5e2d9;
+  color: #215449;
+  box-shadow: none;
+}
+.admin-workspace .fantasy-section-heading button:not(.icon-button),
+.admin-workspace .fantasy-record:not(.icon-button) {
+  background: transparent;
+  border: 0;
+  color: #39695a;
+}
+.admin-workspace button.admin-primary {
+  background: #4d806b;
+  color: #fff;
+  border-color: #4d806b;
+}
+.admin-workspace button.admin-danger {
+  color: #a43d31;
+  border-color: #debdb4;
+  background: #fff7f2;
+}
+.admin-workspace button.admin-danger:hover:not(:disabled) {
+  background: #a43d31;
+  color: #fff;
+}
+.admin-workspace label,
+.admin-workspace .admin-detail,
+.admin-workspace .overlay p {
+  color: #355955;
+}
+.admin-workspace .fantasy-quick button:not(.icon-button) {
+  background: #fcfbf7;
+  color: #355955;
+}
+.admin-workspace > .admin-main {
+  background: #f7f6f0;
+  position: relative;
+  isolation: isolate;
+}
+.admin-workspace > .admin-main:before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 155px;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, #f7f6f0 8%, #f7f6f0cc 46%, #f7f6f040),
+    linear-gradient(0deg, #f7f6f0, transparent 65%),
+    url("/celestial-world.webp") center 51% / cover;
+  opacity: 0.8;
+  pointer-events: none;
+}
+.admin-workspace .fantasy-card {
+  background: #fffefaf7;
+}
+.admin-workspace .fantasy-about {
+  background:
+    linear-gradient(#fffdf4 0%, #fffdf4e6 34%, #ffffff00),
+    url("/celestial-world.webp") 77% 46% / cover;
+}
+.admin-workspace .fantasy-about p {
+  max-width: 200px;
+}
+.admin-workspace .admin-heading {
+  min-height: 52px;
+  margin-bottom: 6px;
+}
+.fantasy-chart svg {
+  min-height: 150px;
+  max-height: 205px;
+}
+.admin-workspace .fantasy-recent td:nth-child(2),
+.admin-workspace .fantasy-recent td:last-child {
+  white-space: nowrap;
+}
+.admin-workspace .fantasy-metric strong {
+  font-family: Arial, sans-serif;
+}
+.fantasy-brand svg {
+  color: #4f8971;
+}
+/* Keep dialogs above the full-width header: the main area must not form a stacking context. */
+.admin-workspace > .admin-main {
+  isolation: auto;
+  background-color: #f7f6f0;
+  background-image:
+    linear-gradient(90deg, #f7f6f0 8%, #f7f6f0cc 46%, #f7f6f040),
+    linear-gradient(0deg, #f7f6f0, transparent 65%),
+    url("/celestial-world.webp");
+  background-size:
+    100% 155px,
+    100% 155px,
+    100% auto;
+  background-position:
+    top,
+    top,
+    center 12%;
+  background-repeat: no-repeat;
+}
+.admin-workspace > .admin-main:before {
+  display: none;
+}
+/* The landscape is a restrained header decoration, never a dashboard-sized backdrop. */
+.admin-workspace > .admin-main {
+  background: #f7f6f0;
+}
+.admin-workspace .admin-heading {
+  padding: 16px 18px;
+  min-height: 105px;
+  background:
+    linear-gradient(90deg, #f7f6f0 18%, #f7f6f0ad 68%, #f7f6f035),
+    linear-gradient(0deg, #f7f6f0, transparent 80%),
+    url("/celestial-world.webp") center 49% / cover no-repeat;
+  margin: -10px -10px 8px;
+  border-radius: 3px;
+}
+.fantasy-brand > svg {
+  width: 32px;
+  height: 32px;
+}
+.admin-workspace .fantasy-recent th {
+  white-space: nowrap;
+}
+@media (max-width: 580px) {
+  .admin-workspace .admin-heading {
+    padding: 12px 10px;
+    min-height: 115px;
+    margin: -5px -5px 8px;
+  }
+  .fantasy-brand > svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+.admin-workspace button.fantasy-record:not(.icon-button) {
+  min-height: 22px;
+  padding: 0;
+}
+.fantasy-statistics > div {
+  padding: 8px 0;
+}
+.fantasy-statistics dd {
+  font-size: 14px;
+}
+.admin-workspace .fantasy-compass {
+  height: 45px;
+  font-size: 38px;
+}
+/* Shared alignment system, retaining the existing ivory/sage visual design. */
+.admin-workspace{--admin-control-height:42px;--admin-control-radius:7px;--admin-control-pad:14px;--admin-control-gap:12px}
+.admin-workspace button,.admin-workspace input:not([type=checkbox]):not([type=radio]):not([type=range]),.admin-workspace select{min-height:var(--admin-control-height);border-radius:var(--admin-control-radius);padding-inline:var(--admin-control-pad);box-sizing:border-box;font:inherit}
+.admin-workspace button{display:inline-flex;align-items:center;justify-content:center;gap:8px;vertical-align:middle}
+.admin-workspace button svg{width:20px;height:20px;flex:0 0 auto}
+.admin-workspace button:disabled{opacity:.5;cursor:not-allowed}
+.admin-workspace :is(button,input,select,a):focus-visible{outline:2px solid #3c8373;outline-offset:3px}
+.admin-workspace .admin-actions,.admin-workspace .admin-toolbar{display:flex;align-items:flex-end;flex-wrap:wrap;gap:var(--admin-control-gap)}
+.admin-workspace .admin-actions{align-items:center}.admin-workspace .admin-toolbar label{display:grid;gap:7px;min-width:0}
+.admin-workspace .admin-toolbar :is(input,select){width:100%}.member-filters>label:first-child{flex:2 1 220px}.member-filters>label{flex:1 1 150px}
+.member-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin:20px 0}.member-metrics article{display:grid;gap:10px;padding:20px}.member-metrics strong{font-size:28px;color:#234e46}
+.member-table-scroll{width:100%;overflow:auto;margin:20px 0}.admin-members table{width:100%;border-collapse:collapse;font-size:13px}.admin-members :is(th,td){padding:12px;text-align:left;vertical-align:middle;border-bottom:1px solid #dce1d7}.admin-members td code{display:block;max-width:150px;overflow-wrap:anywhere}.admin-members small{display:block}.admin-members dd{margin:0;overflow-wrap:anywhere}.admin-members dl>div{display:grid;grid-template-columns:minmax(110px,1fr) 2fr;gap:12px;margin:10px 0}
+@media(max-width:1000px){.member-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.member-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.member-filters>label{flex-basis:100%}.admin-workspace .admin-actions>button{max-width:100%;white-space:normal}.admin-members dl>div{grid-template-columns:1fr}.admin-members :is(th,td){padding:8px}}
+.admin-workspace input:not([type=checkbox]):not([type=radio]):not([type=range]),.admin-workspace select{height:var(--admin-control-height);padding-block:8px}
+.admin-workspace button{padding-block:8px}
+.admin-members th:nth-child(6){min-width:55px;word-break:normal}
+@media(max-width:600px){.admin-workspace .admin-members td[data-label]:before{display:block;width:auto;margin-bottom:4px;font-weight:600;color:#46665d}.member-metrics .admin-panel{margin-block:0}}
+/* Three scoped UI refinements: fixed sidebar columns and character action hierarchy. */
+.admin-workspace > aside nav button:not(.icon-button){display:grid;grid-template-columns:22px minmax(0,1fr);justify-content:start;justify-items:start;align-items:center;gap:14px;min-height:44px;padding:10px 12px;text-align:left;white-space:normal}
+.admin-workspace > aside nav .cosmic-nav-icon{display:grid;place-items:center;width:22px;min-width:22px;height:22px}
+.admin-workspace > aside nav .cosmic-nav-icon svg{width:20px;height:20px}
+.admin-workspace .character-card{display:flex;flex-direction:column}
+.admin-workspace .character-card > .admin-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:auto;padding-top:16px;align-items:stretch}
+.admin-workspace .character-card > .admin-actions button{width:100%;min-width:0;min-height:42px;white-space:normal;padding:8px 12px;font-size:13px}
+.character-card-danger{margin-top:14px;padding-top:10px;border-top:1px solid #dce1d7}
+.admin-workspace .character-card-danger > button.admin-danger{min-height:42px;padding:8px 12px;font-size:13px;background:transparent;border-color:transparent;color:#8a554b;box-shadow:none}
+.admin-workspace .character-card-danger > button.admin-danger:hover:not(:disabled){background:#f2e8e2;border-color:#dfcac0;color:#78483f}

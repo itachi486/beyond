@@ -85,9 +85,7 @@ test("living stars, portal energy, pointer depth and keyboard single entry", asy
     b?.click();
   });
   await expect(page).toHaveURL("/explore");
-  await expect(
-    page.getByRole("button", { name: "Start exploring", exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".selection-reference")).toBeVisible();
   expect(await page.evaluate(() => history.length)).toBe(initial + 1);
   await page.goBack();
   await expect(page).toHaveURL("/");
@@ -115,9 +113,7 @@ test("static reduced-motion and saved preference still enter even with animation
   });
   await page.getByRole("button", { name: "ENTER THE UNKNOWN" }).click();
   await expect(page).toHaveURL("/explore");
-  await page
-    .getByRole("button", { name: "Start exploring", exact: true })
-    .click();
+  await expect(page.locator(".selection-reference")).toBeVisible();
   await page.getByRole("button", { name: "BEYOND", exact: true }).click();
   await page.getByRole("button", { name: "Menu", exact: true }).click();
   await page.getByLabel("Reduce motion").check();
@@ -181,14 +177,19 @@ test("Canvas/WebGL failure and hidden-tab interruption preserve access", async (
       value: false,
     });
   });
-  await expect(
-    page.getByText("3D is unavailable.", { exact: false }),
-  ).toBeVisible();
+  await expect(page.locator(".selection-reference")).toBeVisible();
+  await page.getByRole("button", { name: "WHAT IF?", exact: true }).focus();
+  await expect(page.locator(".selection-fallback-title")).toHaveText(
+    "WHAT IF?",
+  );
   await page.getByRole("button", { name: "Explore", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: /The Archive/ })
     .click();
+  await expect(
+    page.getByText("3D is unavailable.", { exact: false }),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: /01.*A day longer than a year/ })
     .click();
@@ -249,15 +250,10 @@ test.describe("landing touch", () => {
       .getByRole("button", { name: "ENTRA EN LO DESCONOCIDO", exact: true })
       .tap();
     await expect(page).toHaveURL("/explore");
-    await page
-      .getByRole("button", { name: "Comenzar a explorar", exact: true })
-      .tap();
+    await expect(page.locator(".selection-reference")).toBeVisible();
     await expect(
-      page.getByRole("heading", {
-        name: "Seis mundos. Nuevas conexiones.",
-        exact: true,
-      }),
-    ).toBeVisible();
+      page.getByRole("button", { name: "LA MENTE HUMANA", exact: true }),
+    ).toHaveCount(1);
   });
 });
 

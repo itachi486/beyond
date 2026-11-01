@@ -13,6 +13,7 @@ export default defineConfig({
         "*.{crt,pem}",
         "**/.git/**",
         "**/.local/**",
+        "**/character-assets/**",
         "**/server/**",
       ],
     },

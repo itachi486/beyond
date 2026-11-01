@@ -1,7 +1,14 @@
+import { permanentDelete } from "./permanent-delete.mjs";
+import { fantasyOverview } from "./fantasy-overview.mjs";
+import { createCentralLibrary } from "./central-library.mjs";
+import { initialAdminState } from "./admin-setup-state.mjs";
+import { readInventory } from "./admin-inventory.mjs";
+import { createImageAPI } from "./ai-images.mjs";
 import { randomUUID } from "node:crypto";
 import { rows, publicUniverse } from "./store.mjs";
 import {
   digest,
+  adminAllowedEmail,
   normalizeEmail,
   validEmail,
   verifyPassword,
@@ -24,9 +31,21 @@ export function createAPI(
     origin,
     now = Date.now,
     sessionTTL = 8 * 60 * 60 * 1000,
+    aiEnv = process.env,
+    authEnv = process.env,
+    assetRoot = authEnv.BEYOND_ASSET_DIR,
+    aiTransport = fetch,
   } = {},
 ) {
   if (!origin) throw Error("An explicit application origin is required.");
+  const imageAPI = createImageAPI(db, {
+    origin,
+    production,
+    now,
+    env: aiEnv,
+    authEnv,
+    transport: aiTransport,
+  });
   const expectedOrigin = new URL(origin).origin;
   if (production && !expectedOrigin.startsWith("https://"))
     throw Error("Production requires an HTTPS application origin.");
@@ -80,12 +99,14 @@ export function createAPI(
       row && row.reset_at > t ? row.reset_at : t + 15 * 60 * 1000,
     );
   }
-  async function body(req) {
+  async function body(req, maximum = 128 * 1024) {
+    if (Number(req.headers["content-length"] || 0) > maximum)
+      fail(413, "Request is too large.");
     let size = 0,
       chunks = [];
     for await (const chunk of req) {
       size += chunk.length;
-      if (size > 128 * 1024) fail(413, "Request is too large.");
+      if (size > maximum) fail(413, "Request is too large.");
       chunks.push(chunk);
     }
     try {
@@ -137,6 +158,7 @@ export function createAPI(
     };
   }
   return async function handle(req, res, next) {
+    if (await imageAPI(req, res)) return true;
     const url = new URL(req.url, "http://local.invalid"),
       path = url.pathname;
     const isAPI = path.startsWith("/api/");
@@ -148,7 +170,25 @@ export function createAPI(
       return false;
     }
     try {
-      const session = findSession(db, req, production, now());
+      const session = findSession(db, req, production, now(), authEnv);
+      const library = createCentralLibrary(db, {
+        root: assetRoot,
+        now,
+        authorized: () => !!findSession(db, req, production, now(), authEnv),
+      });
+      if (
+        path.startsWith("/api/public/characters") &&
+        (await library.handle(
+          path,
+          req.method,
+          url.searchParams,
+          {},
+          null,
+          res,
+          send,
+        ))
+      )
+        return true;
       if (privatePage) {
         if (!session) {
           res.writeHead(302, {
@@ -167,6 +207,10 @@ export function createAPI(
         return true;
       }
       if (!path.startsWith("/api/admin/")) fail(404, "Endpoint not found.");
+      if (path === "/api/admin/setup-status" && req.method === "GET") {
+        send(res, 200, initialAdminState(db, authEnv));
+        return true;
+      }
       const login = path === "/api/admin/login";
       if (!login && !session) fail(401, "Administrator sign-in required.");
       let input = {};
@@ -181,12 +225,27 @@ export function createAPI(
           fail(415, "Use application/json.");
         if (!login && req.headers["x-csrf-token"] !== session.csrf)
           fail(403, "Request verification failed. Refresh and try again.");
-        input = await body(req);
-        if (!login && !findSession(db, req, production, now()))
+        input = await body(
+          req,
+          path.startsWith("/api/admin/library/characters")
+            ? 26 * 1024 * 1024
+            : 128 * 1024,
+        );
+        if (!login && !findSession(db, req, production, now(), authEnv))
           fail(401, "Administrator session expired.");
       }
       if (login) {
         if (req.method !== "POST") fail(405, "Method not allowed.");
+        if (!adminAllowedEmail(authEnv))
+          fail(
+            503,
+            "Administrator access is not configured. Set one valid ADMIN_ALLOWED_EMAIL on the server.",
+          );
+        if (db.prepare("SELECT COUNT(*) n FROM admins").get().n === 0)
+          fail(
+            409,
+            "The initial administrator password has not been set. Run npm run admin:setup in the project terminal.",
+          );
         const email = normalizeEmail(input.email);
         attempt("ip:" + req.socket.remoteAddress, 20);
         attempt("account:" + email, 6);
@@ -201,6 +260,8 @@ export function createAPI(
         );
         if (
           !validEmail(email) ||
+          email !== adminAllowedEmail(authEnv) ||
+          db.prepare("SELECT COUNT(*) AS n FROM admins").get().n !== 1 ||
           !admin ||
           !valid ||
           db
@@ -261,7 +322,7 @@ export function createAPI(
           );
         const hash = await hashPassword(input.newPassword);
         transaction(() => {
-          if (!findSession(db, req, production, now()))
+          if (!findSession(db, req, production, now(), authEnv))
             fail(401, "Administrator session expired.");
           if (
             db
@@ -293,10 +354,168 @@ export function createAPI(
         );
         return true;
       }
+      if (
+        path.startsWith("/api/admin/library/characters") &&
+        (await library.handle(
+          path,
+          req.method,
+          url.searchParams,
+          input,
+          session,
+          res,
+          send,
+        ))
+      )
+        return true;
+      if (path === "/api/admin/deletion-jobs" && req.method === "GET") {
+        const exists = db
+          .prepare(
+            "SELECT 1 FROM sqlite_master WHERE name='permanent_deletion_jobs'",
+          )
+          .get();
+        send(res, 200, {
+          items: exists
+            ? db
+                .prepare(
+                  "SELECT kind,target_id id,version,created_at createdAt FROM permanent_deletion_jobs ORDER BY created_at LIMIT 100",
+                )
+                .all()
+            : [],
+        });
+        return true;
+      }
+      if (path === "/api/admin/activity" && req.method === "GET") {
+        const table = db
+          .prepare("SELECT 1 FROM sqlite_master WHERE name='central_activity'")
+          .get();
+        const base =
+          "SELECT 'revision-'||id AS id,'Edited '||kind AS action,'Saved revision' AS name,created_at AS createdAt FROM revisions" +
+          (table
+            ? " UNION ALL SELECT id,action,name,created_at AS createdAt FROM central_activity"
+            : "");
+        const search = (url.searchParams.get("search") || "").slice(0, 200),
+          requested = Number(url.searchParams.get("page") || 1);
+        if (!Number.isInteger(requested) || requested < 1 || requested > 100000)
+          fail(400, "Invalid page.");
+        const query =
+          " FROM (" +
+          base +
+          ") WHERE instr(lower(action||' '||name),lower(?))>0";
+        const total = db.prepare("SELECT COUNT(*) n" + query).get(search).n,
+          totalPages = Math.max(1, Math.ceil(total / 10)),
+          page = Math.min(requested, totalPages);
+        send(res, 200, {
+          items: db
+            .prepare(
+              "SELECT *" + query + " ORDER BY createdAt DESC LIMIT 10 OFFSET ?",
+            )
+            .all(search, (page - 1) * 10),
+          total,
+          page,
+          totalPages,
+        });
+        return true;
+      }
+      if (path === "/api/admin/fantasy-overview" && req.method === "GET") {
+        send(res, 200, fantasyOverview(db, now()));
+        return true;
+      }
+      if (path === "/api/admin/cosmic-overview" && req.method === "GET") {
+        const worlds = rows(db, "worlds");
+        const has = library.exists();
+        send(res, 200, {
+          totals: {
+            worlds: worlds.length,
+            characters: has
+              ? db
+                  .prepare(
+                    "SELECT COUNT(*) n FROM central_characters WHERE deleted=0",
+                  )
+                  .get().n
+              : 0,
+            connections: db.prepare("SELECT COUNT(*) n FROM connections").get()
+              .n,
+            activeUsers: db
+              .prepare(
+                "SELECT COUNT(DISTINCT s.admin_id) n FROM sessions s JOIN admins a ON a.id=s.admin_id WHERE s.expires_at>? AND a.email=?",
+              )
+              .get(now(), adminAllowedEmail(authEnv)).n,
+          },
+          scope:
+            "SQLite editorial worlds/connections, central characters and active administrator sessions only. Browser worlds/characters and public visitors are not counted.",
+          worlds: worlds.map((w) => ({
+            id: w.id,
+            name: w.name,
+            status: w.status,
+            hubKey: w.hubKey,
+            hubPosition: w.hubPosition,
+            updatedAt: w.updatedAt,
+          })),
+          edges: db
+            .prepare(
+              "SELECT DISTINCT a.world_id AS source,b.world_id AS target FROM connections c JOIN discoveries a ON a.id=c.from_id JOIN discoveries b ON b.id=c.to_id WHERE a.world_id<>b.world_id",
+            )
+            .all(),
+          distribution: has
+            ? db
+                .prepare(
+                  "SELECT type,COUNT(*) count FROM central_characters WHERE deleted=0 GROUP BY type ORDER BY count DESC",
+                )
+                .all()
+            : [],
+          activity: [
+            ...(has
+              ? db
+                  .prepare(
+                    "SELECT id,action,name,created_at AS createdAt FROM central_activity ORDER BY created_at DESC LIMIT 20",
+                  )
+                  .all()
+              : []),
+            ...db
+              .prepare(
+                "SELECT id,kind,created_at AS createdAt FROM revisions ORDER BY id DESC LIMIT 20",
+              )
+              .all()
+              .map((r) => ({
+                id: "revision-" + r.id,
+                action: "Edited " + r.kind,
+                name: "Saved revision",
+                createdAt: r.createdAt,
+              })),
+          ]
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+            .slice(0, 20),
+        });
+        return true;
+      }
+      if (req.method === "GET") {
+        const inventory = readInventory(db, path, url.searchParams, {
+          now: now(),
+          session,
+          authEnv,
+          aiEnv,
+        });
+        if (inventory) {
+          send(res, 200, inventory);
+          return true;
+        }
+      }
       if (path === "/api/admin/dashboard" && req.method === "GET") {
         const worlds = rows(db, "worlds"),
           discoveries = rows(db, "discoveries");
         send(res, 200, {
+          administratorAccounts: db
+            .prepare("SELECT COUNT(*) n FROM admins")
+            .get().n,
+          serverCharacterAssets: db
+            .prepare(
+              "SELECT 1 FROM sqlite_master WHERE name='ai_character_assets' AND type='table'",
+            )
+            .get()
+            ? db.prepare("SELECT COUNT(*) n FROM ai_character_assets").get().n
+            : 0,
+          browserCharacters: null,
+          browserWorlds: null,
           worlds: worlds.length,
           totalDiscoveries: discoveries.length,
           needsReview: discoveries.filter(
@@ -335,6 +554,26 @@ export function createAPI(
             .prepare("SELECT * FROM connections ORDER BY id")
             .all(),
         });
+        return true;
+      }
+      const deletion = path.match(
+        /^\/api\/admin\/worlds\/([a-zA-Z0-9-]{1,80})\/permanent-delete$/,
+      );
+      if (deletion) {
+        if (req.method !== "POST") fail(405, "Method not allowed.");
+        send(
+          res,
+          200,
+          permanentDelete(db, {
+            kind: "world",
+            id: deletion[1],
+            input,
+            session,
+            now,
+            authorized: () =>
+              !!findSession(db, req, production, now(), authEnv),
+          }),
+        );
         return true;
       }
       const recordMatch = path.match(

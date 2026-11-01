@@ -1,0 +1,54 @@
+{
+  "name": "beyond-cloudflare-preview",
+  "main": "cloudflare/worker.mjs",
+  "compatibility_date": "2026-10-29",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api",
+      "/api/*"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "beyond-migration-preview",
+      "database_id": "5b21c5ee-c783-40a4-b5ec-6e086b1aa6ed",
+      "migrations_dir": "cloudflare/migrations"
+    }
+  ],
+  "vars": {
+    "APP_ORIGIN": "https://beyond-cloudflare-preview.itach9279.workers.dev",
+    "BEYOND_STAGE": "migration-preview",
+    "TIGRIS_BUCKET_NAME": "beyond-preview",
+    "TIGRIS_ENDPOINT": "https://t3.storage.dev",
+    "AI_SERVICE_DAILY_NEURONS": "9000",
+    "AI_TEXT_DAILY_NEURONS": "8000",
+    "AI_IMAGE_DAILY_NEURONS": "1000",
+    "AI_USER_DAILY_IMAGES": "3",
+    "AI_WORLD_EDIT_MODEL": "@cf/black-forest-labs/flux-2-klein-4b"
+  },
+  "rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": [
+        "**/*.wasm"
+      ],
+      "fallthrough": true
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "triggers": {
+    "crons": [
+      "30 3 * * *"
+    ]
+  }
+}

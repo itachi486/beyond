@@ -1,0 +1,5 @@
+import{it,expect}from'vitest';import{companionActionIntent}from'../../shared/companion-intent.mjs';
+it('routes the ten reported scenarios, including follow-ups, error text and real usage questions',()=>{
+ for(const [message,intent]of [['안녕','GENERAL_CHAT'],['여기에 집을 만들고 싶어','CREATE_WORLD_OBJECT'],['집을 서양식으로 바꾸고 싶어','EDIT_EXISTING_WORLD_OBJECT'],['집을 서양식으로 만들고 싶어','EDIT_EXISTING_WORLD_OBJECT'],['이제 만들어 달라','CONFIRM_ACTION'],['여기에 농장을 만들고 싶어','CREATE_WORLD_OBJECT'],['그렇게 하자','CONFIRM_ACTION'],['설계할 수 있어','CONFIRM_ACTION'],['빨리 만들어 달라','CONFIRM_ACTION'],['내가 만든 집이 어때?','INSPECT_WORLD'],['오늘 하루 생성량이 3번인가?','CHECK_USAGE'],['service_unavailable Existing world content is preserved.','REPORT_ERROR'],['그건 취소해 줘','CANCEL_ACTION']])expect(companionActionIntent(message,{pending:{message:'농장'}})).toBe(intent);
+ expect(companionActionIntent('이제 만들어 달라')).toBe('CONFIRM_ACTION');expect(companionActionIntent('집 만드는 법을 설명해 줘')).toBe('GENERAL_CHAT');expect(companionActionIntent('여기에 집이 있으면 좋겠다')).toBe('NEEDS_CLARIFICATION');
+});

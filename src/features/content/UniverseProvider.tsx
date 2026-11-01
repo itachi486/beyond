@@ -1,8 +1,10 @@
+import {readJSON} from '../../lib/apiResponse';
 import {
   createContext,
   useContext,
   useEffect,
   useState,
+  useRef,
   type ReactNode,
 } from "react";
 import "./content.css";
@@ -22,21 +24,14 @@ export function useUniverse() {
 export function UniverseProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<Universe | null>(null),
     [error, setError] = useState("");
+  const reload=useRef<()=>void>(()=>{});
   useEffect(() => {
     let active = true;
     let revision = 0;
     const load = async () => {
       const current = ++revision;
       try {
-        const response = await fetch("/api/public/universe", {
-          cache: "no-store",
-        });
-        if (
-          !response.ok ||
-          !response.headers.get("content-type")?.includes("application/json")
-        )
-          throw Error();
-        const next = await response.json();
+        const next = await readJSON('/api/public/universe');
         if (!Array.isArray(next.worlds) || !Array.isArray(next.discoveries))
           throw Error();
         if (active && current === revision) {
@@ -47,11 +42,11 @@ export function UniverseProvider({ children }: { children: ReactNode }) {
         }
       } catch {
         if (active && current === revision) {
-          setData(null);
           setError("The universe could not be loaded. Please retry.");
         }
       }
     };
+    reload.current=()=>{void load();};
     void load();
     window.addEventListener("focus", load);
     window.addEventListener("beyond:content-changed", load);
@@ -68,9 +63,9 @@ export function UniverseProvider({ children }: { children: ReactNode }) {
         <h1>BEYOND</h1>
         <p role="status">{error || "Opening the universe…"}</p>
         {error && (
-          <button onClick={() => location.reload()}>Retry / Reintentar</button>
+          <button onClick={() => reload.current()}>Retry / Reintentar</button>
         )}
       </main>
     );
-  return <Context.Provider value={data}>{children}</Context.Provider>;
+  return <Context.Provider value={data}>{error&&<aside role="alert">World information could not refresh. Your open world is preserved. <button onClick={()=>reload.current()}>Retry</button></aside>}{children}</Context.Provider>;
 }

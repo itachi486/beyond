@@ -12,6 +12,8 @@ for (const width of [375, 768, 1440])
       .getByRole("button", { name: "ENTER THE UNKNOWN", exact: true })
       .click();
     await expect(page).toHaveURL("/explore");
+    await expect(page.locator(".selection-reference")).toBeVisible();
+    await page.goto("/explore?view=walk");
     await page
       .getByRole("button", { name: "Start exploring", exact: true })
       .click();
@@ -33,7 +35,7 @@ for (const width of [375, 768, 1440])
       await page
         .getByRole("navigation", { name: "Universe destinations" })
         .getByRole("button", { name: w.name.en, exact: true })
-        .click();
+        .press("Enter");
       await expect(
         page.getByRole("heading", { name: w.name.en, exact: true }),
       ).toBeVisible();
@@ -61,7 +63,7 @@ test("walking, drag look, smooth click-to-move and direct keyboard interruption 
   await page.addInitScript(() =>
     localStorage.setItem("beyond:v1:tutorial", "true"),
   );
-  await page.goto("/explore");
+  await page.goto("/explore?view=walk");
   await expect(page.locator(".hub-canvas canvas")).toBeVisible();
   await page.waitForTimeout(350);
   const initial = await page.locator(".hub-coordinates").innerText();
@@ -78,7 +80,7 @@ test("walking, drag look, smooth click-to-move and direct keyboard interruption 
   await page
     .getByRole("navigation", { name: "Universe destinations" })
     .getByRole("button", { name: "WHAT IF?", exact: true })
-    .click();
+    .press("Enter");
   await page.waitForTimeout(700);
   const moving = await page.locator(".hub-coordinates").innerText();
   expect(moving).not.toBe(reset);
@@ -105,14 +107,14 @@ test("WebGL failure retains access to all six destinations and honest empty cont
       return (original as any).apply(this, [type, ...args]);
     } as any;
   });
-  await page.goto("/explore");
+  await page.goto("/explore?view=walk");
   await expect(
     page.getByText("3D is unavailable.", { exact: false }),
   ).toBeVisible();
   await expect(page.locator(".hub-destinations button")).toHaveCount(6);
   await page
     .getByRole("button", { name: "THE HUMAN MIND", exact: true })
-    .click();
+    .press("Enter");
   await page
     .getByRole("button", { name: "Open discoveries", exact: false })
     .click();
@@ -128,7 +130,7 @@ test("actual canvas raycast selects a destination and starts path travel", async
   await page.addInitScript(() =>
     localStorage.setItem("beyond:v1:tutorial", "true"),
   );
-  await page.goto("/explore");
+  await page.goto("/explore?view=walk");
   const canvas = page.locator(".hub-canvas canvas");
   await expect(canvas).toBeVisible();
   await page.waitForTimeout(500);
@@ -137,7 +139,7 @@ test("actual canvas raycast selects a destination and starts path travel", async
   await canvas.click({ position: { x: 350, y: 440 } });
   await page.waitForTimeout(800);
   expect(await page.locator(".hub-coordinates").innerText()).not.toBe(before);
-  await expect(
-    page.getByRole("heading", { name: "WHAT IF?", exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".world-title-announcement")).toHaveText(
+    "WHAT IF?",
+  );
 });

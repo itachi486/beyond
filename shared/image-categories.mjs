@@ -1,0 +1,1 @@
+export const imageCategories=[{id:'what-if',name:'WHAT IF?',color:'#b58a54'},{id:'human-mind',name:'THE HUMAN MIND',color:'#8177ad'},{id:'unsolved',name:'UNSOLVED',color:'#6d91a0'},{id:'hidden-worlds',name:'HIDDEN WORLDS',color:'#648b70'},{id:'your-future',name:'YOUR FUTURE',color:'#b18b65'},{id:'never-knew',name:'THINGS YOU NEVER KNEW',color:'#698a9b'}];

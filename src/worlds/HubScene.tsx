@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import PublishedImages from "../features/creation/PublishedImages";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useUniverse } from "../features/content/UniverseProvider";
 import { createHub } from "./hub";
 import { Overlay } from "../components/Overlay";
-import type { Locale } from "../locales";
+import { messages, type Locale } from "../locales";
 import "./hub.css";
 export default function HubScene({
   locale,
@@ -10,6 +11,7 @@ export default function HubScene({
   reduced,
   blocked,
   selected,
+  arriveImmediately = false,
   onWorld,
   onDiscovery,
 }: {
@@ -18,13 +20,16 @@ export default function HubScene({
   reduced: boolean;
   blocked: boolean;
   selected: string | null;
+  arriveImmediately?: boolean;
   onWorld: (id: string) => void;
   onDiscovery: (id: string) => void;
 }) {
   const catalog = useUniverse();
+  const t = messages[locale];
   const actions = useRef({ onDiscovery });
   actions.current = { onDiscovery };
   const worlds = catalog.worlds.filter((w) => w.hubKey);
+  const buttons = useRef(new Map<string, HTMLButtonElement>());
   const host = useRef<HTMLDivElement>(null),
     engine = useRef<ReturnType<typeof createHub> | null>(null);
   const [failed, setFailed] = useState(false),
@@ -48,8 +53,14 @@ export default function HubScene({
         onArrive: setNear,
         onPosition: (x, z) => setPosition([x, z]),
         onFail: () => setFailed(true),
+        onReady: () => setReady(true),
+        onAnchors: (anchors) =>
+          anchors.forEach(({ id, x, y }) => {
+            const button = buttons.current.get(id);
+            button?.style.setProperty("--world-x", `${x}%`);
+            button?.style.setProperty("--world-y", `${y}%`);
+          }),
       });
-      setReady(true);
     } catch {
       setFailed(true);
     }
@@ -58,17 +69,22 @@ export default function HubScene({
       engine.current = null;
     };
   }, [catalog, simple, reduced]);
-  useEffect(() => engine.current?.pause(blocked || list), [blocked, list]);
+  useLayoutEffect(
+    () => engine.current?.pause(blocked || list),
+    [blocked, list, ready],
+  );
   useEffect(() => {
-    if (selected) engine.current?.go(selected);
-  }, [selected, ready]);
-  const active = worlds.find((w) => w.id === (near || hover || selected));
+    if (selected) engine.current?.go(selected, arriveImmediately);
+  }, [selected, ready, arriveImmediately]);
+  useEffect(() => engine.current?.setLocale(locale), [locale, ready]);
+  const active = worlds.find((w) => w.id === (hover || near || selected));
   const records = active
     ? catalog.discoveries.filter((d) => d.worldId === active.id)
     : [];
   function choose(id: string) {
     setHover(id);
     setList(false);
+    if (failed) setNear(id);
     onWorld(id);
     engine.current?.go(id);
   }
@@ -76,6 +92,9 @@ export default function HubScene({
     <>
       <div
         className="hub-canvas"
+        data-ready={ready ? "true" : "false"}
+        data-active-title={hover || near || ""}
+        aria-busy={!ready && !failed}
         ref={host}
         role="img"
         aria-label={
@@ -84,7 +103,10 @@ export default function HubScene({
             : "Six connected destinations in an imaginary environment"
         }
       />
-      <section className="hub-title">
+      <section
+        className="hub-title"
+        data-interacting={hover ? "true" : "false"}
+      >
         <p>
           {locale === "es" ? "ELIGE TU CURIOSIDAD" : "CHOOSE YOUR CURIOSITY"}
         </p>
@@ -110,9 +132,16 @@ export default function HubScene({
             : "3D is unavailable. Choose a destination to explore its content."}
         </p>
       )}
-      {active && !blocked && (
+      <p
+        className="world-title-announcement sr-only"
+        role="status"
+        aria-live="polite"
+      >
+        {active?.name[locale] || ""}
+      </p>
+      {active && near && !blocked && (
         <aside className="hub-context">
-          <span>
+          <span className="sr-only">
             {locale === "es"
               ? near
                 ? "ESTÁS AQUÍ"
@@ -121,7 +150,7 @@ export default function HubScene({
                 ? "YOU ARE HERE"
                 : "FOLLOW YOUR CURIOSITY"}
           </span>
-          <h2>{active.name[locale]}</h2>
+          <h2 className="sr-only">{active.name[locale]}</h2>
           <p>{active.description[locale]}</p>
           {!records.length && (
             <p className="hub-empty">
@@ -130,6 +159,7 @@ export default function HubScene({
                 : "No discoveries published in this destination yet."}
             </p>
           )}
+          <details><summary>World images</summary><PublishedImages category={active.hubKey!}/></details>
           <button onClick={() => setList(true)}>
             {locale === "es" ? "Ver descubrimientos" : "Open discoveries"}{" "}
             <span>↗</span>
@@ -138,7 +168,7 @@ export default function HubScene({
       )}
       {!blocked && (
         <nav
-          className="hub-destinations"
+          className={`hub-destinations${failed ? " is-fallback" : ""}`}
           aria-label={
             locale === "es" ? "Destinos del universo" : "Universe destinations"
           }
@@ -146,11 +176,24 @@ export default function HubScene({
           {worlds.map((w) => (
             <button
               key={w.id}
+              ref={(node) => {
+                if (node) buttons.current.set(w.id, node);
+                else buttons.current.delete(w.id);
+              }}
+              aria-label={w.name[locale]}
+              onFocus={() => {
+                setHover(w.id);
+                engine.current?.emphasize(w.id);
+              }}
+              onBlur={() => {
+                setHover(null);
+                engine.current?.emphasize(null);
+              }}
               aria-current={active?.id === w.id ? "location" : undefined}
+              disabled={!ready && !failed}
               onClick={() => choose(w.id)}
             >
-              <i style={{ background: w.color }} />
-              {w.name[locale]}
+              <span className="hub-name">{w.name[locale]}</span>
             </button>
           ))}
           {!worlds.length && (
@@ -179,33 +222,36 @@ export default function HubScene({
           <div
             className="movement-pad hub-movement"
             role="group"
-            aria-label={
-              locale === "es" ? "Controles de movimiento" : "Movement controls"
-            }
+            aria-label={t.controls}
           >
             {[
-              ["w", "↑"],
-              ["a", "←"],
-              ["s", "↓"],
-              ["d", "→"],
-            ].map(([key, text]) => (
+              ["w", "↑", t.forward],
+              ["a", "←", t.left],
+              ["s", "↓", t.backward],
+              ["d", "→", t.right],
+            ].map(([key, text, label]) => (
               <button
                 key={key}
-                aria-label={
-                  (locale === "es" ? "Mover " : "Move ") +
-                  { w: "forward", a: "left", s: "backward", d: "right" }[key]
-                }
+                disabled={!ready}
+                aria-label={label}
                 onPointerDown={(e) => {
                   e.currentTarget.setPointerCapture(e.pointerId);
                   engine.current?.move(key, true);
                 }}
                 onPointerUp={() => engine.current?.move(key, false)}
                 onPointerCancel={() => engine.current?.move(key, false)}
+                onLostPointerCapture={() => engine.current?.move(key, false)}
+                onBlur={() => engine.current?.move(key, false)}
                 onKeyDown={(e) => {
-                  if (e.key === " " || e.key === "Enter")
+                  if (e.key === " " || e.key === "Enter") {
+                    e.preventDefault();
                     engine.current?.move(key, true);
+                  }
                 }}
-                onKeyUp={() => engine.current?.move(key, false)}
+                onKeyUp={(e) => {
+                  if (e.key === " " || e.key === "Enter")
+                    engine.current?.move(key, false);
+                }}
               >
                 {text}
               </button>

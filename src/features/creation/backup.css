@@ -1,0 +1,77 @@
+.backup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: #020719e8;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow: auto;
+}
+.backup-dialog {
+  position: relative;
+  width: min(680px, 100%);
+  max-height: 92dvh;
+  overflow: auto;
+  padding: 38px 24px;
+  background: linear-gradient(145deg, #102137, #0a1024);
+  border: 1px solid #cfae6e80;
+  border-radius: 16px;
+  color: #e4edfa;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
+.backup-dialog h2 {
+  font-family: Georgia, serif;
+  color: #f2d893;
+}
+.backup-dialog label {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+}
+.backup-dialog input {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  color: inherit;
+  background: #0a1529;
+  border: 1px solid #70859e;
+}
+.backup-export {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 100%;
+}
+.backup-export small {
+  max-width: 280px;
+  white-space: normal;
+}
+.backup-dialog button:focus-visible,
+.backup-dialog input:focus-visible {
+  outline: 2px solid #80e6e1;
+  outline-offset: 3px;
+}
+.backup-dialog .upload-preview {
+  max-height: 220px;
+}
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+@media (max-width: 480px) {
+  .backup-dialog {
+    padding: 38px 14px;
+  }
+  .backup-dialog button {
+    max-width: 100%;
+    white-space: normal;
+  }
+  .backup-dialog input[type="file"] {
+    font-size: 12px;
+  }
+}

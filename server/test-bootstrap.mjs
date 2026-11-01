@@ -6,7 +6,9 @@ export async function bootstrapTestDatabase(file, password) {
     throw Error("Expected disposable test path.");
   const db = openStore(file);
   try {
-    await createInitialAdmin(db, "editor@example.test", password);
+    await createInitialAdmin(db, "editor@example.test", password, {
+      ADMIN_ALLOWED_EMAIL: "editor@example.test",
+    });
   } finally {
     db.close();
   }

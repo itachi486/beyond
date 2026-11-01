@@ -1,7 +1,20 @@
+import {readAPIResponse} from "../lib/apiResponse";
+import AdminMembers from "./AdminMembers";
+import ImageManagement from "./ImageManagement";
+import AdminNavIcon from "./AdminNavIcon";
+import PendingDeletions from "./PendingDeletions";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Overlay } from "../components/Overlay";
+import { ActivityLog, CosmicIcon } from "./CosmicDashboard";
+import CentralCharacters from "./CentralCharacters";
+import AdminInventory, { SystemStatus } from "./AdminInventory";
+import FantasyDashboard from "./FantasyDashboard";
+import PermanentDelete from "./PermanentDelete";
+import { t, adminDate } from "./i18n";
 import "./admin.css";
+import "./cosmic-admin.css";
+import "./fantasy-admin.css";
 type Text = { en: string; es: string };
 type Source = { url: string; description: string; verification: string };
 type RecordData = {
@@ -27,6 +40,7 @@ type RecordData = {
   questions: string;
   media: string;
   updatedAt?: string;
+  createdAt?: string;
   truthType: string;
   verificationStatus: string;
   uncertainty: string;
@@ -65,15 +79,27 @@ const blank = (): RecordData => ({
   media: "",
 });
 const navigation = [
-  ["", "Overview"],
-  ["worlds", "Worlds"],
-  ["discoveries", "Discoveries"],
-  ["connections", "Connections"],
-  ["settings", "Settings"],
+  ["", t("dashboard")],
+  ["worlds", t("worlds")],
+  ["characters", t("characters")],
+  ["connections", t("ui.connections")],
+  ["analytics", t("ui.analytics")],
+  ["settings", t("settings")],
+  ["users", t("users")],
+  ["content", t("content")],
+  ["discoveries", t("ui.discoveries")],
+  ["activity", t("activity")],
+  ["images", "Image Management"],
 ];
 export default function AdminApp() {
   const location = useLocation(),
     navigate = useNavigate();
+  const [clock, setClock] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(new Date()), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const [setupState, setSetupState] = useState("unknown");
   const [session, setSession] = useState<Session | null>(null),
     [boot, setBoot] = useState(true),
     [error, setError] = useState(""),
@@ -86,6 +112,8 @@ export default function AdminApp() {
     connections: [],
   });
   const [dashboard, setDashboard] = useState<{
+    administratorAccounts: number;
+    serverCharacterAssets: number;
     worlds: number;
     published: number;
     drafts: number;
@@ -119,6 +147,7 @@ export default function AdminApp() {
   const [currentPassword, setCurrentPassword] = useState(""),
     [newPassword, setNewPassword] = useState(""),
     [confirmPassword, setConfirmPassword] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
   const parts = location.pathname.split("/").filter(Boolean),
     section = parts[1] || "",
     id = parts[2],
@@ -133,7 +162,7 @@ export default function AdminApp() {
     ) => {
       const res = await fetch("/api/admin/" + path, {
         method,
-        signal,
+        signal: signal ? AbortSignal.any([signal,AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000),
         cache: "no-store",
         headers:
           method === "GET"
@@ -144,7 +173,8 @@ export default function AdminApp() {
               },
         body: value === undefined ? undefined : JSON.stringify(value),
       });
-      const data = await res.json();
+      if(res.status===401&&!path.startsWith("login")){setSession(null);navigate("/admin/login",{replace:true});}
+      const data = await readAPIResponse(res,"/api/admin/"+path);
       if (!res.ok) {
         if (res.status === 401 && !path.startsWith("login")) {
           setSession(null);
@@ -158,11 +188,16 @@ export default function AdminApp() {
   );
   useEffect(() => {
     let active = true;
-    fetch("/api/admin/session", { cache: "no-store" })
-      .then(async (res) => {
+    Promise.all([
+      fetch("/api/admin/session", { cache: "no-store" }),
+      fetch("/api/admin/setup-status", { cache: "no-store" }),
+    ])
+      .then(async ([res, setup]) => {
         if (!active) return;
+        if (setup.ok) setSetupState((await readAPIResponse(setup,"/api/admin/setup-status")).state);
+        else setSetupState("unavailable");
         if (res.ok) {
-          setSession(await res.json());
+          setSession(await readAPIResponse(res,"/api/admin/session"));
           if (isLogin) navigate("/admin", { replace: true });
         } else if (!isLogin) navigate("/admin/login", { replace: true });
       })
@@ -177,6 +212,18 @@ export default function AdminApp() {
     };
   }, []);
   useEffect(() => {
+    if (!session) return;
+    const expire = () => {
+      setSession(null);
+      navigate("/admin/login", { replace: true });
+    };
+    const timer = window.setTimeout(
+      expire,
+      Math.max(0, Math.min(session.expiresAt - Date.now(), 2147483647)),
+    );
+    return () => window.clearTimeout(timer);
+  }, [session?.expiresAt, navigate]);
+  useEffect(() => {
     setPage(1);
     setSearch("");
     setFilter("");
@@ -184,6 +231,7 @@ export default function AdminApp() {
   }, [section]);
   useEffect(() => {
     if (!session || isLogin) return;
+    if(!section||section==='analytics'||['images','users'].includes(section)){setLoading(false);return;}
     const controller = new AbortController();
     const load = async () => {
       setLoading(true);
@@ -359,7 +407,7 @@ export default function AdminApp() {
   }
   const title = section
     ? navigation.find(([key]) => key === section)?.[1] || "Workspace"
-    : "Overview";
+    : "Dashboard";
   if (boot)
     return (
       <main className="admin-loading" role="status">
@@ -368,10 +416,17 @@ export default function AdminApp() {
     );
   if (isLogin || !session)
     return (
-      <main className="admin-login">
+      <main className="admin-login cosmic-login">
+        <div className="cosmic-login-art" aria-hidden="true" />
+        <a className="cosmic-login-logo" href="/">
+          <CosmicIcon kind="active" />
+          <span>
+            BEYOND<small>INFINITE COSMOS</small>
+          </span>
+        </a>
         <section>
           <span className="admin-brand">BEYOND</span>
-          <p className="admin-eyebrow">PRIVATE EDITORIAL WORKSPACE</p>
+          <p className="admin-eyebrow">PRIVATE ADMINISTRATION</p>
           <h1>
             A universe worth discovering.
             <br />
@@ -380,63 +435,181 @@ export default function AdminApp() {
           <p>Create worlds, refine discoveries and connect meaningful ideas.</p>
           <a href="/">Return to BEYOND</a>
         </section>
-        <form onSubmit={login}>
-          <h2>Administrator sign in</h2>
-          <p>No public administrator registration.</p>
-          <label>
-            Email address
-            <input
-              type="email"
-              required
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </label>
-          <label htmlFor="admin-password">Password</label>
-          <div className="admin-password">
-            <input
-              id="admin-password"
-              type={showPassword ? "text" : "password"}
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <button type="button" onClick={() => setShowPassword((v) => !v)}>
-              {showPassword ? "Hide" : "Show"}
+        {setupState !== "ready" ? (
+          <section className="admin-setup" aria-labelledby="admin-setup-title">
+            <h2 id="admin-setup-title">
+              {setupState === "initial_setup_required"
+                ? "Set your first administrator password"
+                : setupState === "configuration_required"
+                  ? "Administrator email configuration required"
+                  : setupState === "operator_review_required"
+                    ? "Administrator configuration needs review"
+                    : "Administrator status unavailable"}
+            </h2>
+            {setupState === "initial_setup_required" ? (
+              <>
+                <p>
+                  No administrator account or password has been registered. You
+                  choose the first password; there is no default password.
+                </p>
+                <ol>
+                  <li>Open a terminal in the BEYOND project directory.</li>
+                  <li>
+                    Run <code>npm run admin:setup</code>.
+                  </li>
+                  <li>
+                    Enter your new password twice at the hidden prompts (at
+                    least 12 characters, at most 256 bytes).
+                  </li>
+                  <li>
+                    Refresh this page, then sign in with your configured email
+                    and chosen password.
+                  </li>
+                </ol>
+                <p>
+                  The command uses only ADMIN_ALLOWED_EMAIL from your server
+                  environment. Never paste passwords into chat or put them in
+                  commands.
+                </p>
+              </>
+            ) : setupState === "configuration_required" ? (
+              <p>
+                Set one valid ADMIN_ALLOWED_EMAIL in the ignored .env.local file
+                and restart the server. Registration and login are blocked until
+                configured.
+              </p>
+            ) : setupState === "operator_review_required" ? (
+              <p>
+                Existing accounts were preserved. The server operator must check
+                that the single configured email matches the existing
+                administrator. Initial setup cannot replace an account.
+              </p>
+            ) : (
+              <p>
+                Check that the local server is running, then refresh. No
+                registration or authentication bypass is available.
+              </p>
+            )}
+            {error && (
+              <p role="alert" className="admin-error">
+                {error}
+              </p>
+            )}
+            <button type="button" onClick={() => window.location.reload()}>
+              Check setup again
             </button>
-          </div>
-          {error && (
-            <p role="alert" className="admin-error">
-              {error}
+          </section>
+        ) : (
+          <form onSubmit={login}>
+            <h2>Welcome Back</h2>
+            <p className="cosmic-login-context">Administrator sign in</p>
+            <p className="admin-muted">
+              Authorized administrator only · No public registration
             </p>
-          )}
-          <button className="admin-primary" disabled={busy}>
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
-          <p className="admin-muted">
-            First installation? The server operator must run the documented
-            private setup command.
-          </p>
-        </form>
+            <label>
+              Email address
+              <div className="cosmic-input">
+                <CosmicIcon kind="email" />
+                <input
+                  type="email"
+                  required
+                  placeholder="Your administrator email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </label>
+            <label htmlFor="admin-password">Password</label>
+            <div className="admin-password">
+              <CosmicIcon kind="lock" />
+              <input
+                id="admin-password"
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button type="button" onClick={() => setShowPassword((v) => !v)}>
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            {error && (
+              <p role="alert" className="admin-error">
+                {error}
+              </p>
+            )}
+            <button className="admin-primary" disabled={busy}>
+              {busy ? "Signing in…" : "Sign in"}
+            </button>
+            <p className="admin-muted">
+              First installation? The server operator must run the documented
+              private setup command.
+            </p>
+            <details className="admin-recovery">
+              <summary>Forgot your password?</summary>
+              <p>
+                If you know the current password, change it in System Settings.
+                Email reset is not configured. If it is lost, ask the server
+                operator for a separately authorized recovery procedure; do not
+                delete the database or rerun initial setup to replace the
+                account.
+              </p>
+            </details>
+          </form>
+        )}
       </main>
     );
   return (
-    <main className="admin-workspace">
+    <main className={"admin-workspace" + (menuOpen ? " admin-menu-open" : "")}>
+      <header className="fantasy-topbar">
+        <a href="/" className="fantasy-brand">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 40 40"
+            width="32"
+            height="32"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M20 35V15M20 25C5 25 5 8 5 8s16 1 15 17ZM20 20C20 6 35 4 35 4s2 16-15 16ZM20 33C25 22 36 22 36 22s-1 14-16 11Z" />
+          </svg>
+          {t("ui.beyond")} <small>{t("ui.admin")}</small>
+        </a>
+        <button
+          className="fantasy-menu-toggle"
+          aria-label={t("menu")}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          {t("symbol.menu")}{" "}
+        </button>
+        <time>{adminDate(clock)}</time>
+        <span className="fantasy-account">{session.email}</span>
+      </header>
       <aside>
         <a className="admin-brand" href="/">
-          BEYOND
+          {t("ui.beyond")}{" "}
         </a>
-        <p className="admin-eyebrow">EDITORIAL WORKSPACE</p>
-        <nav aria-label="Administrator navigation">
+        <p className="admin-eyebrow">{t("ui.infinite.cosmos")}</p>
+        <nav aria-label={t("ui.administrator.navigation")}>
           {navigation.map(([key, label]) => (
             <button
               key={key}
+              aria-label={label}
               aria-current={section === key ? "page" : undefined}
-              onClick={() => navigate("/admin" + (key ? "/" + key : ""))}
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/admin" + (key ? "/" + key : ""));
+              }}
             >
-              {label}
+              <span className="cosmic-nav-icon">
+                <AdminNavIcon section={key} />
+              </span>
+              {key === "settings" ? t("ui.settings") : label}
             </button>
           ))}
         </nav>
@@ -451,21 +624,28 @@ export default function AdminApp() {
             })
           }
         >
-          Sign out
+          {t("ui.sign.out")}{" "}
         </button>
       </aside>
       <section className="admin-main">
+        <div className="cosmic-topbar">
+          <span>{t("ui.private.administration")}</span>
+          <time>{adminDate(clock)}</time>
+          <span className="cosmic-avatar" aria-label={t("ui.administrator")}>
+            {t("symbol.star")}{" "}
+          </span>
+        </div>
         <header className="admin-heading">
           <div>
-            <p className="admin-eyebrow">PRIVATE OPERATIONS / BEYOND</p>
+            <p className="admin-eyebrow">{t("ui.private.operations.beyond")}</p>
             <h1>
               {isEditor
-                ? (id === "new" ? "Create " : "Edit ") +
+                ? (id === "new" ? t("ui.create") : t("ui.edit")) +
                   (section === "worlds" ? "world" : "discovery")
                 : title}
             </h1>
           </div>
-          <a href="/">Open public universe ↗</a>
+          <a href="/">{t("ui.open.public.universe")}</a>
         </header>
         {error && (
           <p role="alert" className="admin-error">
@@ -473,73 +653,74 @@ export default function AdminApp() {
           </p>
         )}
         {notice && (
-          <p role="status" aria-label="Action result" className="admin-notice">
+          <p
+            role="status"
+            aria-label={t("ui.action.result")}
+            className="admin-notice"
+          >
             {notice}
           </p>
         )}
-        {loading && <p role="status">Loading persisted content…</p>}
-        {!section && dashboard && (
-          <>
-            <div className="admin-stats">
-              {[
-                ["Worlds", dashboard.worlds],
-                ["Total discoveries", dashboard.totalDiscoveries],
-                ["Needs verification", dashboard.needsReview],
-                ["Published discoveries", dashboard.published],
-                ["Drafts", dashboard.drafts],
-                ["Under review", dashboard.review],
-              ].map(([label, value]) => (
-                <article key={label}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </article>
-              ))}
-            </div>
+        {loading && <p role="status">{t("ui.loading.persisted.content")}</p>}
+        {section === "images" && <ImageManagement request={request} category={id} />}
+        {section === "characters" && <CentralCharacters request={request} />}
+        {section === "characters" && (
+          <h2 className="cosmic-secondary-heading">
+            {t("ui.private.ai.asset.inventory.separate")}{" "}
+          </h2>
+        )}
+        {(section === "users" || section === "characters") && (
+          section === "users" ? <AdminMembers request={request}/> : <AdminInventory key={section} kind={section} request={request} />
+        )}
+        {section === "content" && (
+          <section className="admin-panel">
+            <h2>{t("ui.content.and.connections")}</h2>
+            <p>
+              {t(
+                "ui.manage.real.sqlite.discoveries.and.their.explicit.connections.browser.ch",
+              )}{" "}
+            </p>
             <div className="admin-actions">
-              <button
-                className="admin-primary"
-                onClick={() => navigate("/admin/discoveries/new")}
-              >
-                Create discovery
+              <button onClick={() => navigate("/admin/discoveries")}>
+                {t("ui.manage.discoveries")}{" "}
               </button>
-              <button onClick={() => navigate("/admin/worlds")}>
-                Manage worlds
+              <button onClick={() => navigate("/admin/connections")}>
+                {t("ui.manage.connections")}{" "}
               </button>
             </div>
-            <section className="admin-panel">
-              <h2>Recently edited</h2>
-              {dashboard.recent.length ? (
-                dashboard.recent.map((r) => (
-                  <button
-                    className="admin-recent"
-                    key={r.kind + r.id}
-                    onClick={() =>
-                      navigate(
-                        "/admin/" +
-                          (r.kind === "world" ? "worlds" : "discoveries") +
-                          "/" +
-                          r.id,
-                      )
-                    }
-                  >
-                    <span>{r.title?.en || r.name?.en}</span>
-                    <span className={"admin-status " + r.status}>
-                      {r.status}
-                    </span>
-                    <time>{new Date(r.updatedAt!).toLocaleString()}</time>
-                  </button>
-                ))
-              ) : (
-                <p>No content has been created yet.</p>
-              )}
-            </section>
-          </>
+            <p>
+              {t("ui.server.discoveries")} {catalog.discoveries.length}
+              {t("ui.server.connections")} {catalog.connections.length}
+            </p>
+          </section>
+        )}
+        {(!section || section === "analytics") && (
+          <FantasyDashboard
+            request={request}
+            navigate={navigate}
+            analytics={section === "analytics"}
+          />
+        )}
+        {section === "activity" && <ActivityLog request={request} />}
+        {!section && dashboard && (
+          <div className="cosmic-editorial-shortcuts">
+            <span>
+              <span>{t("ui.published.discoveries")}</span>{" "}
+              <strong>{dashboard.published}</strong>
+            </span>
+            <button onClick={() => navigate("/admin/discoveries/new")}>
+              {t("ui.create.discovery")}{" "}
+            </button>
+            <button onClick={() => navigate("/admin/worlds")}>
+              {t("ui.manage.worlds")}{" "}
+            </button>
+          </div>
         )}
         {(section === "worlds" || section === "discoveries") && !isEditor && (
           <>
             <div className="admin-toolbar">
               <label>
-                Search
+                {t("ui.search")}{" "}
                 <input
                   type="search"
                   value={search}
@@ -550,7 +731,7 @@ export default function AdminApp() {
                 />
               </label>
               <label>
-                Status
+                {t("ui.status")}{" "}
                 <select
                   value={filter}
                   onChange={(e) => {
@@ -558,7 +739,7 @@ export default function AdminApp() {
                     setPage(1);
                   }}
                 >
-                  <option value="">All states</option>
+                  <option value="">{t("ui.all.states")}</option>
                   {["draft", "review", "published", "archived"].map((s) => (
                     <option key={s}>{s}</option>
                   ))}
@@ -568,33 +749,59 @@ export default function AdminApp() {
                 className="admin-primary"
                 onClick={() => navigate("/admin/" + section + "/new")}
               >
-                Create {section === "worlds" ? "world" : "discovery"}
+                {t("ui.create.3")}{" "}
+                {section === "worlds" ? "world" : "discovery"}
               </button>
             </div>
             <div className="admin-panel">
               <table>
                 <thead>
                   <tr>
-                    <th>Title / name</th>
-                    <th>Status</th>
-                    <th>Last updated</th>
-                    <th>Action</th>
+                    <th>{t("ui.title.name")}</th>
+                    <th>{t("ui.status")}</th>
+                    {section === "worlds" && (
+                      <>
+                        <th>{t("ui.owner")}</th>
+                        <th>{t("ui.characters")}</th>
+                        <th>{t("ui.created")}</th>
+                      </>
+                    )}
+                    <th>{t("ui.last.updated")}</th>
+                    <th>{t("ui.action")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((r) => (
                     <tr key={r.id}>
-                      <td data-label="Title / name">
+                      <td data-label={t("ui.title.name")}>
                         {r.title?.en || r.name?.en}
-                        <small>/{r.slug}</small>
+                        <small>
+                          {t("separator.slash")}
+                          {r.slug}
+                        </small>
                       </td>
-                      <td data-label="Status">
+                      <td data-label={t("ui.status")}>
                         <span className={"admin-status " + r.status}>
                           {r.status}
                         </span>
                       </td>
-                      <td data-label="Updated">
-                        {new Date(r.updatedAt!).toLocaleString()}
+                      {section === "worlds" && (
+                        <>
+                          <td data-label={t("ui.owner")}>
+                            {t("ui.not.recorded")}
+                          </td>
+                          <td data-label={t("ui.characters")}>
+                            {t("ui.not.centrally.stored")}
+                          </td>
+                          <td data-label={t("ui.created")}>
+                            {r.createdAt
+                              ? adminDate(r.createdAt)
+                              : t("ui.unavailable")}
+                          </td>
+                        </>
+                      )}
+                      <td data-label={t("ui.updated")}>
+                        {adminDate(r.updatedAt!)}
                       </td>
                       <td>
                         <button
@@ -602,8 +809,21 @@ export default function AdminApp() {
                             navigate("/admin/" + section + "/" + r.id)
                           }
                         >
-                          Edit
+                          {t("ui.edit.5")}{" "}
                         </button>
+                        {section === "worlds" && r.id && (
+                          <PermanentDelete
+                            kind="world"
+                            id={r.id}
+                            name={r.name.en}
+                            version={r.version!}
+                            request={request}
+                            onDeleted={() => {
+                              setNotice(t("deleted"));
+                              setRefresh((v) => v + 1);
+                            }}
+                          />
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -611,25 +831,30 @@ export default function AdminApp() {
               </table>
               {!items.length && !loading && (
                 <p>
-                  No matching records. Create content or adjust the filters.
+                  {t(
+                    "ui.no.matching.records.create.content.or.adjust.the.filters",
+                  )}{" "}
                 </p>
               )}
               <div className="admin-pagination">
-                <span>Total {total}</span>
+                <span>
+                  {t("ui.total")} {total}
+                </span>
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Previous
+                  {t("ui.previous")}{" "}
                 </button>
                 <span>
-                  Page {page} of {pages}
+                  {t("ui.page")} {page}
+                  {t("ui.of")} {pages}
                 </span>
                 <button
                   disabled={page >= pages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Next
+                  {t("ui.next")}{" "}
                 </button>
               </div>
             </div>
@@ -639,7 +864,9 @@ export default function AdminApp() {
           <form className="admin-editor" onSubmit={save}>
             <section className="admin-panel">
               <h2>
-                {section === "worlds" ? "World identity" : "Discovery content"}
+                {section === "worlds"
+                  ? t("ui.world.identity")
+                  : t("ui.discovery.content")}
               </h2>
               {section === "worlds" ? (
                 <>
@@ -656,7 +883,7 @@ export default function AdminApp() {
               )}
               <div className="admin-field-pair">
                 <label>
-                  Slug
+                  {t("ui.slug")}{" "}
                   <input
                     required
                     pattern="[a-z0-9]+(-[a-z0-9]+)*"
@@ -665,7 +892,7 @@ export default function AdminApp() {
                   />
                 </label>
                 <label>
-                  Publication state
+                  {t("ui.publication.state")}{" "}
                   <select
                     value={record.status}
                     onChange={(e) => update("status", e.target.value)}
@@ -677,15 +904,15 @@ export default function AdminApp() {
                 </label>
               </div>
               <p className="admin-muted">
-                Drafts, review and archived content are private. Publishing
-                requires complete content and sources. Source URLs are not
-                automatically verified.
+                {t(
+                  "ui.drafts.review.and.archived.content.are.private.publishing.requires.compl",
+                )}{" "}
               </p>
               {section === "worlds" ? (
                 <>
                   <div className="admin-field-pair">
                     <label>
-                      Presentation theme
+                      {t("ui.presentation.theme")}{" "}
                       <select
                         value={record.theme}
                         onChange={(e) => update("theme", e.target.value)}
@@ -698,7 +925,7 @@ export default function AdminApp() {
                       </select>
                     </label>
                     <label>
-                      Accent color
+                      {t("ui.accent.color")}{" "}
                       <input
                         pattern="#[a-fA-F0-9]{6}"
                         value={record.color}
@@ -706,7 +933,7 @@ export default function AdminApp() {
                       />
                     </label>
                     <label>
-                      World label
+                      {t("ui.world.label")}{" "}
                       <input
                         maxLength={3}
                         value={record.symbol}
@@ -714,7 +941,7 @@ export default function AdminApp() {
                       />
                     </label>
                     <label>
-                      Display order
+                      {t("ui.display.order")}{" "}
                       <input
                         type="number"
                         min={0}
@@ -728,16 +955,18 @@ export default function AdminApp() {
                   </div>
                   {record.hubKey && (
                     <section>
-                      <h3>Hub placement · {record.hubKey}</h3>
+                      <h3>
+                        {t("ui.hub.placement")} {record.hubKey}
+                      </h3>
                       <p className="admin-muted">
-                        Walkable plane Y=0. These coordinates position this
-                        destination and its connecting path in the actual
-                        six-world hub.
+                        {t(
+                          "ui.walkable.plane.y.0.these.coordinates.position.this.destination.and.its.c",
+                        )}{" "}
                       </p>
                       <div className="admin-coordinates">
                         {[0, 2].map((i) => (
                           <label key={i}>
-                            Hub {i === 0 ? "X" : "Z"}
+                            {t("ui.hub")} {i === 0 ? t("ui.x") : t("ui.z")}
                             <input
                               type="number"
                               min={-60}
@@ -760,7 +989,7 @@ export default function AdminApp() {
                   )}
                   {record.id && (
                     <section>
-                      <h3>Associated discoveries</h3>
+                      <h3>{t("ui.associated.discoveries")}</h3>
                       {catalog.discoveries
                         .filter((d) => d.worldId === record.id)
                         .map((d) => (
@@ -772,12 +1001,13 @@ export default function AdminApp() {
                               navigate("/admin/discoveries/" + d.id)
                             }
                           >
-                            {d.title.en} · {d.status}
+                            {d.title.en}
+                            {t("separator.dot")} {d.status}
                           </button>
                         ))}
                       {!catalog.discoveries.some(
                         (d) => d.worldId === record.id,
-                      ) && <p>No associated discoveries.</p>}
+                      ) && <p>{t("ui.no.associated.discoveries")}</p>}
                     </section>
                   )}
                 </>
@@ -785,10 +1015,10 @@ export default function AdminApp() {
                 <>
                   <div className="admin-field-pair">
                     <label>
-                      World
+                      {t("ui.world")}{" "}
                       <select
                         required
-                        aria-label="World"
+                        aria-label={t("ui.world")}
                         value={record.worldId}
                         onChange={(e) => {
                           const worldId = e.target.value;
@@ -805,28 +1035,30 @@ export default function AdminApp() {
                       >
                         {catalog.worlds.map((w) => (
                           <option key={w.id} value={w.id}>
-                            {w.name.en} ({w.status})
+                            {w.name.en}
+                            {t("separator.open")}
+                            {w.status}
+                            {t("separator.close")}{" "}
                           </option>
                         ))}
                       </select>
                     </label>
                     <label>
-                      Content type
+                      {t("ui.content.type")}{" "}
                       <select
                         value={record.contentType}
                         onChange={(e) => update("contentType", e.target.value)}
                       >
-                        <option value="article">article</option>
-                        <option value="question">question</option>
+                        <option value="article">{t("ui.article")}</option>
+                        <option value="question">{t("ui.question")}</option>
                       </select>
                     </label>
                   </div>
-                  <h3>World placement</h3>
+                  <h3>{t("ui.world.placement")}</h3>
                   <p className="admin-muted">
-                    Coordinates configure actual discovery landmarks. Hub worlds
-                    use local X/Z within ±4 and Y within 0–6; legacy worlds
-                    retain their original coordinates. Existing movement and
-                    portals are preserved.
+                    {t(
+                      "ui.coordinates.configure.actual.discovery.landmarks.hub.worlds.use.local.x.",
+                    )}{" "}
                   </p>
                   <div className="admin-coordinates">
                     {["X", "Y", "Z"].map((axis, i) => (
@@ -851,7 +1083,7 @@ export default function AdminApp() {
                     ))}
                   </div>
                   <label>
-                    Image reference (HTTPS or local path, optional)
+                    {t("ui.image.reference.https.or.local.path.optional")}{" "}
                     <input
                       value={record.media}
                       onChange={(e) => update("media", e.target.value)}
@@ -863,54 +1095,58 @@ export default function AdminApp() {
             {section === "discoveries" && (
               <>
                 <section className="admin-panel">
-                  <h2>Sources and review</h2>
+                  <h2>{t("ui.sources.and.review")}</h2>
                   <div className="admin-field-pair">
                     <label>
-                      Claim classification
+                      {t("ui.claim.classification")}{" "}
                       <select
                         value={record.truthType}
                         onChange={(e) => update("truthType", e.target.value)}
                       >
-                        <option value="factual">Factual</option>
-                        <option value="hypothesis">Hypothesis</option>
-                        <option value="fictional">Fictional scenario</option>
+                        <option value="factual">{t("ui.factual")}</option>
+                        <option value="hypothesis">{t("ui.hypothesis")}</option>
+                        <option value="fictional">
+                          {t("ui.fictional.scenario")}
+                        </option>
                       </select>
                     </label>
                     <label>
-                      Content verification
+                      {t("ui.content.verification")}{" "}
                       <select
                         value={record.verificationStatus}
                         onChange={(e) =>
                           update("verificationStatus", e.target.value)
                         }
                       >
-                        <option value="needs_review">Requires review</option>
+                        <option value="needs_review">
+                          {t("ui.requires.review")}
+                        </option>
                         <option value="verified">
-                          Verified by authorized editor
+                          {t("ui.verified.by.authorized.editor")}{" "}
                         </option>
                         <option value="hypothetical">
-                          Hypothetical — not established fact
+                          {t("ui.hypothetical.not.established.fact")}{" "}
                         </option>
-                        <option value="rejected">Rejected</option>
+                        <option value="rejected">{t("ui.rejected")}</option>
                       </select>
                     </label>
                   </div>
                   <label>
-                    Uncertainty or scenario notes
+                    {t("ui.uncertainty.or.scenario.notes")}{" "}
                     <textarea
                       value={record.uncertainty}
                       onChange={(e) => update("uncertainty", e.target.value)}
                     />
                   </label>
                   <p className="admin-muted">
-                    Only authorized editorial actions can change verification.
-                    Entering a URL does not verify a claim. New factual content
-                    needs verification before publication.
+                    {t(
+                      "ui.only.authorized.editorial.actions.can.change.verification.entering.a.url",
+                    )}{" "}
                   </p>
                   {record.sources.map((source, i) => (
                     <div className="admin-source" key={i}>
                       <label>
-                        Source URL
+                        {t("ui.source.url")}{" "}
                         <input
                           type="url"
                           required
@@ -926,7 +1162,7 @@ export default function AdminApp() {
                         />
                       </label>
                       <label>
-                        Source description
+                        {t("ui.source.description")}{" "}
                         <input
                           required
                           value={source.description}
@@ -943,7 +1179,7 @@ export default function AdminApp() {
                         />
                       </label>
                       <label>
-                        Editorial verification
+                        {t("ui.editorial.verification")}{" "}
                         <select
                           value={source.verification}
                           onChange={(e) =>
@@ -957,9 +1193,11 @@ export default function AdminApp() {
                             )
                           }
                         >
-                          <option value="unverified">Unverified</option>
+                          <option value="unverified">
+                            {t("ui.unverified")}
+                          </option>
                           <option value="verified">
-                            Manually reviewed by editor
+                            {t("ui.manually.reviewed.by.editor")}{" "}
                           </option>
                         </select>
                       </label>
@@ -972,14 +1210,15 @@ export default function AdminApp() {
                           )
                         }
                       >
-                        Remove source
+                        {t("ui.remove.source")}{" "}
                       </button>
                     </div>
                   ))}
                   {!record.sources.length && (
                     <p>
-                      No sources. Publication is blocked until described sources
-                      are added.
+                      {t(
+                        "ui.no.sources.publication.is.blocked.until.described.sources.are.added",
+                      )}{" "}
                     </p>
                   )}
                   <button
@@ -995,11 +1234,11 @@ export default function AdminApp() {
                       ])
                     }
                   >
-                    Add source
+                    {t("ui.add.source")}{" "}
                   </button>
                 </section>
                 <section className="admin-panel">
-                  <h2>Evidence, interpretation and open questions</h2>
+                  <h2>{t("ui.evidence.interpretation.and.open.questions")}</h2>
                   {(["evidence", "interpretation", "questions"] as const).map(
                     (key) => (
                       <label key={key}>
@@ -1015,7 +1254,7 @@ export default function AdminApp() {
                 </section>
                 {record.id && (
                   <section className="admin-panel">
-                    <h2>Incoming and outgoing connections</h2>
+                    <h2>{t("ui.incoming.and.outgoing.connections")}</h2>
                     {catalog.connections
                       .filter(
                         (c) => c.from_id === record.id || c.to_id === record.id,
@@ -1026,19 +1265,19 @@ export default function AdminApp() {
                             catalog.discoveries.find((d) => d.id === c.from_id)
                               ?.title.en
                           }{" "}
-                          →{" "}
+                          {t("symbol.arrow")}{" "}
                           {
                             catalog.discoveries.find((d) => d.id === c.to_id)
                               ?.title.en
                           }
-                          : {c.explanation}
+                          {t("separator.colon")} {c.explanation}
                         </p>
                       ))}
                     <button
                       type="button"
                       onClick={() => navigate("/admin/connections")}
                     >
-                      Manage connections
+                      {t("ui.manage.connections")}{" "}
                     </button>
                   </section>
                 )}
@@ -1046,30 +1285,31 @@ export default function AdminApp() {
             )}
             <div className="admin-actions">
               <button className="admin-primary" disabled={busy}>
-                {busy ? "Saving…" : "Save changes"}
+                {busy ? t("ui.saving") : t("ui.save.changes")}
               </button>
               {section === "discoveries" && (
                 <button type="button" onClick={() => setPreview(true)}>
-                  Preview
+                  {t("ui.preview")}{" "}
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => navigate("/admin/" + section)}
               >
-                Back to list
+                {t("ui.back.to.list")}{" "}
               </button>
             </div>
             <section className="admin-panel">
-              <h2>Preserved revision history</h2>
+              <h2>{t("ui.preserved.revision.history")}</h2>
               {history.length ? (
                 history.map((h) => (
                   <p key={h.id}>
-                    Revision {h.id} · {new Date(h.created_at).toLocaleString()}
+                    {t("ui.revision")} {h.id}
+                    {t("separator.dot")} {adminDate(h.created_at)}
                   </p>
                 ))
               ) : (
-                <p>No earlier revisions.</p>
+                <p>{t("ui.no.earlier.revisions")}</p>
               )}
             </section>
           </form>
@@ -1083,7 +1323,7 @@ export default function AdminApp() {
                 void action(async () => {
                   await request(
                     "connections" + (connection.id ? "/" + connection.id : ""),
-                    connection.id ? "PUT" : "POST",
+                    connection.id ? t("ui.put") : t("ui.post"),
                     connection,
                   );
                   setConnection({
@@ -1092,19 +1332,21 @@ export default function AdminApp() {
                     toId: "",
                     explanation: "",
                   });
-                  setNotice("Connection saved.");
+                  setNotice(t("ui.connection.saved"));
                 });
               }}
             >
               <h2>
                 {connection.id
-                  ? "Edit connection"
-                  : "Connect meaningful discoveries"}
+                  ? t("ui.edit.connection")
+                  : t("ui.connect.meaningful.discoveries")}
               </h2>
               <div className="admin-field-pair">
                 {(["fromId", "toId"] as const).map((key) => (
                   <label key={key}>
-                    {key === "fromId" ? "From discovery" : "To discovery"}
+                    {key === "fromId"
+                      ? t("ui.from.discovery")
+                      : t("ui.to.discovery")}
                     <select
                       required
                       disabled={!!connection.id}
@@ -1113,12 +1355,15 @@ export default function AdminApp() {
                         setConnection((c) => ({ ...c, [key]: e.target.value }))
                       }
                     >
-                      <option value="">Choose a discovery</option>
+                      <option value="">{t("ui.choose.a.discovery")}</option>
                       {catalog.discoveries
                         .filter((d) => d.status !== "archived")
                         .map((d) => (
                           <option key={d.id} value={d.id}>
-                            {d.title.en} ({d.status})
+                            {d.title.en}
+                            {t("separator.open")}
+                            {d.status}
+                            {t("separator.close")}{" "}
                           </option>
                         ))}
                     </select>
@@ -1126,7 +1371,7 @@ export default function AdminApp() {
                 ))}
               </div>
               <label>
-                Why are these discoveries related?
+                {t("ui.why.are.these.discoveries.related")}{" "}
                 <textarea
                   required
                   maxLength={1000}
@@ -1140,7 +1385,7 @@ export default function AdminApp() {
                 />
               </label>
               <button className="admin-primary" disabled={busy}>
-                Save connection
+                {t("ui.save.connection")}{" "}
               </button>
               {connection.id && (
                 <button
@@ -1154,12 +1399,12 @@ export default function AdminApp() {
                     })
                   }
                 >
-                  Cancel edit
+                  {t("ui.cancel.edit")}{" "}
                 </button>
               )}
             </form>
             <section className="admin-panel">
-              <h2>Connections</h2>
+              <h2>{t("ui.connections")}</h2>
               {catalog.connections.map((c) => (
                 <article className="admin-link" key={c.id}>
                   <strong>
@@ -1167,7 +1412,7 @@ export default function AdminApp() {
                       catalog.discoveries.find((d) => d.id === c.from_id)?.title
                         .en
                     }{" "}
-                    →{" "}
+                    {t("symbol.arrow")}{" "}
                     {
                       catalog.discoveries.find((d) => d.id === c.to_id)?.title
                         .en
@@ -1184,30 +1429,33 @@ export default function AdminApp() {
                       })
                     }
                   >
-                    Edit explanation
+                    {t("ui.edit.explanation")}{" "}
                   </button>
                   <button
                     disabled={busy}
                     onClick={() => {
                       if (
                         confirm(
-                          "Remove this connection? Its earlier value remains in revision history.",
+                          t(
+                            "ui.remove.this.connection.its.earlier.value.remains.in.revision.history",
+                          ),
                         )
                       )
                         void action(async () => {
                           await request("connections/" + c.id, "DELETE", {});
-                          setNotice("Connection removed.");
+                          setNotice(t("ui.connection.removed"));
                         });
                     }}
                   >
-                    Remove
+                    {t("ui.remove")}{" "}
                   </button>
                 </article>
               ))}
               {!catalog.connections.length && (
                 <p>
-                  No connections yet. Explain a meaningful relationship to
-                  create one.
+                  {t(
+                    "ui.no.connections.yet.explain.a.meaningful.relationship.to.create.one",
+                  )}{" "}
                 </p>
               )}
             </section>
@@ -1215,12 +1463,15 @@ export default function AdminApp() {
         )}
         {section === "settings" && (
           <>
+            <SystemStatus request={request} />
+            <PendingDeletions request={request} />
             <section className="admin-panel">
-              <h2>Administrator account</h2>
+              <h2>{t("ui.administrator.account")}</h2>
               <p>{session.email}</p>
               <p className="admin-muted">
-                Session expires {new Date(session.expiresAt).toLocaleString()}.
-                No public account registration.
+                {t("ui.session.expires")}{" "}
+                {adminDate(new Date(session.expiresAt))}
+                {t("ui.no.public.account.registration")}{" "}
               </p>
             </section>
             <form
@@ -1228,7 +1479,7 @@ export default function AdminApp() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (newPassword !== confirmPassword) {
-                  setError("New passwords do not match.");
+                  setError(t("ui.new.passwords.do.not.match"));
                   return;
                 }
                 void action(async () => {
@@ -1241,14 +1492,14 @@ export default function AdminApp() {
                   setConfirmPassword("");
                   setSession(await request("session"));
                   setNotice(
-                    "Password changed. Other sessions have been revoked.",
+                    t("ui.password.changed.other.sessions.have.been.revoked"),
                   );
                 });
               }}
             >
-              <h2>Change password</h2>
+              <h2>{t("ui.change.password")}</h2>
               <label>
-                Current password
+                {t("ui.current.password")}{" "}
                 <input
                   type="password"
                   autoComplete="current-password"
@@ -1258,7 +1509,7 @@ export default function AdminApp() {
                 />
               </label>
               <label>
-                New password
+                {t("ui.new.password")}{" "}
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -1269,7 +1520,7 @@ export default function AdminApp() {
                 />
               </label>
               <label>
-                Confirm new password
+                {t("ui.confirm.new.password")}{" "}
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -1280,7 +1531,7 @@ export default function AdminApp() {
                 />
               </label>
               <button disabled={busy} className="admin-primary">
-                Change password
+                {t("ui.change.password")}{" "}
               </button>
             </form>
             <form
@@ -1291,51 +1542,63 @@ export default function AdminApp() {
                   await request("settings", "PUT", {
                     defaultLanguage: defaults,
                   });
-                  setNotice("Application defaults saved.");
+                  setNotice(t("ui.application.defaults.saved"));
                 });
               }}
             >
-              <h2>Application defaults</h2>
+              <h2>{t("ui.application.defaults")}</h2>
               <label>
-                Default language for new visitors
+                {t("ui.default.language.for.new.visitors")}{" "}
                 <select
                   value={defaults}
+                  disabled={loading || busy}
                   onChange={(e) => setDefaults(e.target.value)}
                 >
-                  <option value="en">English</option>
-                  <option value="es">Spanish</option>
+                  <option value="en">{t("ui.english")}</option>
+                  <option value="es">{t("ui.spanish")}</option>
                 </select>
               </label>
-              <button disabled={busy}>Save defaults</button>
+              <button disabled={busy || loading}>
+                {t("ui.save.defaults")}
+              </button>
             </form>
           </>
         )}
         {preview && (
           <Overlay
-            title="Private editorial preview"
+            title={t("ui.private.editorial.preview")}
             closeLabel="Close preview"
             onClose={() => setPreview(false)}
           >
             <article className="admin-preview">
-              <p>UNPUBLISHED PREVIEW · {record.status}</p>
+              <p>
+                {t("ui.unpublished.preview")} {record.status}
+              </p>
               <h1>{record.title.en}</h1>
               <p>{record.summary.en}</p>
               {record.body.map((p, i) => (
                 <p key={i}>{p.en}</p>
               ))}
-              <h2>Evidence</h2>
+              <h2>{t("ui.evidence")}</h2>
               <p>{record.evidence}</p>
-              <h2>Interpretation</h2>
+              <h2>{t("ui.interpretation")}</h2>
               <p>{record.interpretation}</p>
-              <h2>Open questions</h2>
+              <h2>{t("ui.open.questions")}</h2>
               <p>{record.questions}</p>
               <p>
-                Sources entered: {record.sources.length}. Entry does not
-                establish verification.
+                {t("ui.sources.entered")} {record.sources.length}
+                {t("ui.entry.does.not.establish.verification")}{" "}
               </p>
             </article>
           </Overlay>
         )}
+        <footer className="fantasy-footer">
+          <span>{t("ui.beyond.admin.v1.0.0")}</span>
+          <span>
+            {t("symbol.copyright")} {new Date().getFullYear()}
+            {t("ui.beyond.12")} {t("footer")}
+          </span>
+        </footer>
       </section>
     </main>
   );

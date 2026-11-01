@@ -20,16 +20,14 @@ test("English threshold enters real 3D, worlds and discovery connections", async
   await page.getByRole("button", { name: "ENTER THE UNKNOWN" }).click();
   await expect(page).toHaveURL(/explore/);
   await dismiss(page);
-  await expect(
-    page.getByRole("heading", {
-      name: "Six worlds. Unexpected connections.",
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.locator(".selection-reference")).toBeVisible();
   await page.getByRole("button", { name: "Explore", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: /The Archive/ })
+    .click();
+  await page
+    .getByRole("button", { name: "Start exploring", exact: true })
     .click();
   await expect(page.locator("canvas")).toBeVisible();
   await page
@@ -161,6 +159,10 @@ for (const width of [375, 768, 1440])
       }),
     ).toBeVisible();
     await page.getByRole("button", { name: "ENTRA EN LO DESCONOCIDO" }).click();
+    await expect(page.locator(".selection-reference")).toBeVisible();
+    await page
+      .getByRole("button", { name: "¿Y SI…?", exact: true })
+      .press("Enter");
     await page
       .getByRole("button", { name: "Comenzar a explorar", exact: true })
       .click();

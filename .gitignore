@@ -12,3 +12,9 @@ playwright-report/
 *.db
 *.db-*
 !.env.example
+
+# Private persistent character originals (default is alongside the local database).
+character-assets/
+
+# Cloudflare local D1/R2 state may contain private data.
+.wrangler/

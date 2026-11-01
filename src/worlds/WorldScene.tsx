@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createUniverse } from "./engine";
 import type { WorldId } from "../data/universe";
 import { useUniverse } from "../features/content/UniverseProvider";
@@ -53,9 +53,9 @@ export default function WorldScene({
       engine.current = null;
     };
   }, [world, simple, reduced, catalog]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     engine.current?.pause(blocked);
-  }, [blocked]);
+  }, [blocked, ready]);
   return (
     <>
       <div
@@ -100,11 +100,18 @@ export default function WorldScene({
                 }}
                 onPointerUp={() => engine.current?.move(key, false)}
                 onPointerCancel={() => engine.current?.move(key, false)}
+                onLostPointerCapture={() => engine.current?.move(key, false)}
+                onBlur={() => engine.current?.move(key, false)}
                 onKeyDown={(e) => {
-                  if (e.key === " " || e.key === "Enter")
+                  if (e.key === " " || e.key === "Enter") {
+                    e.preventDefault();
                     engine.current?.move(key, true);
+                  }
                 }}
-                onKeyUp={() => engine.current?.move(key, false)}
+                onKeyUp={(e) => {
+                  if (e.key === " " || e.key === "Enter")
+                    engine.current?.move(key, false);
+                }}
               >
                 {symbol}
               </button>

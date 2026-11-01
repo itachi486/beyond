@@ -1,60 +1,45 @@
 import { openStore } from "./store.mjs";
-import { createInitialAdmin } from "./auth.mjs";
-import { createInterface } from "node:readline/promises";
-const email = process.argv[2];
-if (!email) {
-  console.error(
-    "Usage: npm run admin:setup -- admin@example.com (password is read privately from stdin)",
-  );
-  process.exit(1);
-}
-let password = "";
-if (process.stdin.isTTY) {
-  process.stdout.write("Administrator password (12+ characters; hidden): ");
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
-  password = await new Promise((resolve, reject) => {
-    let value = "";
-    const read = (buffer) => {
-      for (const c of buffer.toString()) {
-        if (c === "\u0003") {
-          process.stdin.off("data", read);
-          reject(Error("Cancelled."));
-          return;
-        }
-        if (c === "\n" || c === "\r") {
-          process.stdin.off("data", read);
-          resolve(value);
-          return;
-        }
-        if (c === "\u007f" || c === "\b") value = value.slice(0, -1);
-        else value += c;
-      }
-    };
-    process.stdin.on("data", read);
-  }).finally(() => {
-    process.stdin.setRawMode(false);
-    process.stdin.pause();
-    process.stdout.write("\n");
-  });
-} else {
-  const input = createInterface({ input: process.stdin });
-  for await (const line of input) {
-    password = line;
-    input.close();
-    break;
-  }
-}
-const db = openStore();
+import {
+  adminAllowedEmail,
+  createInitialAdmin,
+  normalizeEmail,
+} from "./auth.mjs";
+import { readSetupPasswords } from "./setup-password.mjs";
+let db,
+  password = "",
+  confirmation = "";
 try {
+  const allowed = adminAllowedEmail();
+  if (!allowed)
+    throw Error(
+      "Configure one valid ADMIN_ALLOWED_EMAIL in .env.local, then restart setup. Nothing was registered.",
+    );
+  const email =
+    process.argv[2] === undefined ? allowed : normalizeEmail(process.argv[2]);
+  if (email !== allowed)
+    throw Error(
+      "The requested email is not authorized. Nothing was registered.",
+    );
+  db = openStore();
+  if (db.prepare("SELECT 1 FROM admins LIMIT 1").get())
+    throw Error(
+      "An administrator already exists. Initial setup is disabled; existing credentials were preserved.",
+    );
+  console.log(
+    "One-time local administrator setup. No public registration endpoint is available.",
+  );
+  [password, confirmation] = await readSetupPasswords();
+  if (password !== confirmation)
+    throw Error("Passwords do not match. Nothing was registered.");
   await createInitialAdmin(db, email, password);
   console.log(
-    "Initial administrator created. No password or hash was printed.",
+    "Initial administrator created. Sign in at /admin/login using your configured email and chosen password.",
   );
 } catch (e) {
   console.error(e.message);
   process.exitCode = 1;
 } finally {
   password = "";
-  db.close();
+  confirmation = "";
+  db?.close();
 }

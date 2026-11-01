@@ -1,0 +1,937 @@
+/* Cosmic operations styles are intentionally scoped away from exploration. */
+.admin-workspace,
+.admin-login,
+.admin-loading {
+  background: #040b1e;
+  color: #dce8ff;
+  color-scheme: dark;
+}
+.admin-workspace {
+  grid-template-columns: 212px minmax(0, 1fr);
+  background:
+    radial-gradient(ellipse at 70% 0, #10264b88, transparent 50%), #040b1e;
+}
+.admin-workspace aside {
+  background: linear-gradient(180deg, #061226, #020918);
+  border-color: #27395a88;
+  padding: 25px 18px;
+  gap: 12px;
+}
+.admin-workspace .admin-brand,
+.admin-login .admin-brand {
+  color: #eef2ff;
+  font-family: Georgia, serif;
+  font-size: 22px;
+  letter-spacing: 0.2em;
+}
+.admin-workspace .admin-eyebrow {
+  color: #afc7ea;
+  font-size: 8px;
+}
+.admin-workspace .admin-account {
+  color: #9eb4dc;
+  font-size: 11px;
+}
+.admin-workspace nav {
+  gap: 7px;
+  margin: 13px 0;
+}
+.admin-workspace nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-color: transparent;
+  background: transparent;
+  padding: 11px 12px !important;
+  font-size: 12px !important;
+}
+.admin-workspace nav button[aria-current] {
+  background: linear-gradient(110deg, #12658b66, #4c4b9944);
+  border-color: #4779b866;
+  box-shadow: 0 0 16px #329bd316;
+  color: #f3f7ff;
+}
+.cosmic-nav-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  color: #a6d5ff;
+}
+.cosmic-nav-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.admin-main {
+  padding: 0 24px 30px;
+}
+.cosmic-topbar {
+  min-height: 57px;
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  border-bottom: 1px solid #263b5b66;
+  color: #9fbce5;
+  font-size: 11px;
+}
+.cosmic-topbar time {
+  margin-left: auto;
+}
+.cosmic-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #6553ad66;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: 0 0 15px #8f85f744;
+}
+.admin-heading {
+  margin: 22px 0 16px;
+}
+.admin-heading h1 {
+  font:
+    27px Georgia,
+    serif;
+  color: #f4f3ff;
+}
+.admin-heading .admin-eyebrow {
+  display: none;
+}
+.admin-heading a {
+  color: #94b9e4;
+}
+.admin-workspace .admin-panel,
+.cosmic-panel {
+  background: linear-gradient(135deg, #102440a8, #101b3ac9);
+  border: 1px solid #3c578b66;
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 #a2c9fb08;
+  color: #d8e5ff;
+  padding: 18px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.admin-workspace label,
+.admin-workspace .admin-muted,
+.admin-workspace .admin-recent time {
+  color: #9fb8db;
+}
+.admin-workspace input,
+.admin-workspace select,
+.admin-workspace textarea,
+.admin-login input {
+  background: #172d575c;
+  color: #edf3ff;
+  border-color: #526fa477;
+  border-radius: 9px;
+}
+.admin-workspace button:not(.icon-button),
+.admin-login button {
+  background: #1c315866;
+  color: #dbeaff;
+  border-color: #4b6b9655;
+  border-radius: 8px;
+}
+.admin-workspace button.admin-primary,
+.admin-login button.admin-primary {
+  background: linear-gradient(115deg, #a991ed, #529df3 60%, #efcda0);
+  color: #fff;
+  border: 1px solid #cad9ff77;
+  box-shadow: 0 0 25px #757ff533;
+}
+.admin-workspace .admin-error,
+.admin-login .admin-error {
+  background: #4c203b99;
+  color: #ffe0e4;
+  border-color: #d57b9f88;
+}
+.admin-workspace .admin-notice {
+  background: #133e4266;
+  color: #a7f5dc;
+  border-color: #5cb9b488;
+}
+.admin-workspace a {
+  color: #b1d7ff;
+}
+.admin-workspace .admin-status {
+  background: #7d8cb433;
+  color: #b7c9ee;
+}
+.admin-workspace .admin-status.published {
+  background: #1d988e22;
+  color: #89ead2;
+}
+.admin-workspace .admin-status.draft {
+  background: #c99f6a22;
+  color: #eed6b4;
+}
+.admin-workspace .admin-status.archived {
+  background: #777c9422;
+  color: #aab8cc;
+}
+.admin-workspace td,
+.admin-workspace th,
+.admin-workspace tr,
+.admin-workspace .admin-link {
+  border-color: #38507966;
+}
+.admin-workspace th {
+  color: #b1c6ed;
+}
+.admin-workspace .overlay {
+  background: linear-gradient(145deg, #112447, #081329);
+  color: #dce9ff;
+  border-color: #536b9a;
+}
+.admin-workspace .overlay-header {
+  border-color: #4b6382;
+}
+.admin-workspace .overlay .eyebrow {
+  color: #a6c9ed;
+}
+.admin-workspace td[data-label]:before {
+  color: #9bb8e7;
+}
+.admin-workspace button:focus-visible,
+.admin-workspace input:focus-visible,
+.admin-workspace select:focus-visible,
+.admin-login button:focus-visible,
+.admin-login input:focus-visible,
+.cosmic-world-overview g:focus-visible {
+  outline: 2px solid #94e8ff;
+  outline-offset: 3px;
+}
+.cosmic-greeting {
+  font:
+    21px Georgia,
+    serif;
+  color: #f2edff;
+  margin: 0 0 8px;
+}
+.cosmic-dashboard > .admin-muted {
+  font-size: 11px;
+  margin-bottom: 20px;
+}
+.cosmic-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 245px;
+  gap: 15px;
+}
+.cosmic-main-column {
+  min-width: 0;
+}
+.cosmic-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.cosmic-metric {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 14px;
+  min-width: 0;
+}
+.cosmic-metric > div {
+  min-width: 0;
+}
+.cosmic-metric div > span {
+  font-size: 11px;
+}
+.cosmic-metric strong {
+  display: block;
+  font:
+    32px Georgia,
+    serif;
+  color: #f4f5ff;
+  margin: 7px 0;
+}
+.cosmic-metric small {
+  font-size: 9px;
+  color: #91b7d8;
+  display: block;
+}
+.cosmic-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #5491d8aa;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #376ffb99, #14358644);
+  box-shadow:
+    0 0 24px #3a76f45c,
+    inset 0 0 13px #75a6ff55;
+  color: #e6f5ff;
+}
+.cosmic-icon svg {
+  width: 28px;
+  height: 28px;
+  filter: drop-shadow(0 0 5px #95d8ff);
+}
+.cosmic-metric.characters .cosmic-icon {
+  background: #7550ae66;
+  border-color: #a58ced99;
+  box-shadow: 0 0 22px #9a68f366;
+}
+.cosmic-metric.connections .cosmic-icon {
+  background: #155f7c66;
+  border-color: #52e6e799;
+  box-shadow: 0 0 22px #4bd9e344;
+}
+.cosmic-metric.active .cosmic-icon {
+  background: #94734855;
+  border-color: #ddc78b99;
+  box-shadow: 0 0 22px #dbc58e44;
+}
+.cosmic-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.cosmic-panel h2 {
+  font:
+    15px Arial,
+    sans-serif;
+  color: #eff5ff;
+  margin: 0 0 15px;
+}
+.cosmic-section-heading h2 {
+  margin: 0;
+}
+.admin-workspace .cosmic-section-heading button {
+  padding: 5px 8px;
+  min-height: 30px;
+  font-size: 10px;
+  background: transparent;
+  border-color: transparent;
+}
+.cosmic-world-overview {
+  margin: 15px 0;
+  padding: 16px;
+  background:
+    linear-gradient(#071632aa, #071632c9),
+    url("/celestial-world.webp") center/cover;
+}
+.cosmic-world-overview svg {
+  display: block;
+  width: 100%;
+  height: 230px;
+  overflow: visible;
+}
+.cosmic-world-overview g {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.cosmic-world-overview g:hover {
+  filter: drop-shadow(0 0 9px #70d6ff);
+}
+.cosmic-world-overview small {
+  font-size: 9px;
+  color: #a9bede;
+}
+.cosmic-bottom-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+}
+.cosmic-bottom-grid > .cosmic-panel:last-child {
+  grid-column: 1/-1;
+}
+.cosmic-world-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 14px;
+}
+.admin-workspace .cosmic-world-cards button {
+  min-height: 100px;
+  background-image:
+    linear-gradient(transparent, #0b153df2),
+    url("/world-selection-reference.png");
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  text-align: left;
+  font-size: 10px;
+  padding: 10px;
+}
+.cosmic-world-cards small {
+  font-size: 8px;
+  color: #a6bcdf;
+  margin-top: 5px;
+}
+.cosmic-distribution {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.cosmic-donut {
+  width: 100px;
+  height: 100px;
+  flex: 0 0 100px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.cosmic-donut span {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #101e3b;
+  display: grid;
+  place-items: center;
+  font: 25px Georgia;
+  color: #fff;
+}
+.cosmic-distribution ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+}
+.cosmic-distribution li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  font-size: 10px;
+}
+.cosmic-distribution i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+}
+.cosmic-distribution strong {
+  margin-left: auto;
+}
+.cosmic-quick {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.admin-workspace .cosmic-quick button {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  border: 0;
+  background: none;
+  padding: 5px;
+  font-size: 10px;
+}
+.cosmic-activity {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.cosmic-activity > article {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.cosmic-activity article strong {
+  font-size: 11px;
+  font-weight: 400;
+}
+.cosmic-activity article p {
+  font-size: 10px;
+  color: #b6c9e5;
+  margin: 6px 0;
+}
+.cosmic-activity time {
+  font-size: 9px;
+  color: #829fc8;
+}
+.cosmic-activity > small {
+  font-size: 10px;
+  color: #819bc2;
+  margin-top: auto;
+}
+.cosmic-activity p,
+.cosmic-bottom-grid p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #a7bedb;
+}
+.cosmic-log-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 0;
+  border-bottom: 1px solid #3c578b66;
+}
+.cosmic-log-entry time {
+  font-size: 11px;
+  color: #9ebce6;
+}
+.admin-central {
+  margin-bottom: 26px;
+}
+.admin-central h2 {
+  font: 23px Georgia;
+  color: #e8e9ff;
+}
+.admin-central .admin-toolbar {
+  margin: 15px 0;
+}
+.admin-central .admin-toolbar p {
+  font-size: 12px;
+  color: #a7bedb;
+}
+.admin-character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+.admin-central-thumb {
+  width: 100%;
+  height: 160px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #091830;
+}
+.admin-character-grid h3 {
+  color: #dff1ff;
+  font: 20px Georgia;
+  margin: 12px 0;
+}
+.admin-character-grid p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b2c5e2;
+}
+.admin-character-grid small {
+  font-size: 10px;
+  color: #97b4d9;
+}
+.cosmic-model-placeholder {
+  display: block;
+  text-align: center;
+  font-size: 100px;
+  line-height: 160px;
+  color: #ac95fc;
+  text-shadow: 0 0 30px #b58eff;
+}
+.cosmic-secondary-heading {
+  font: 19px Georgia;
+  color: #b8c7e4;
+  margin-top: 35px;
+}
+.central-admin-form label {
+  margin: 18px 0;
+}
+.central-admin-form textarea {
+  min-height: 100px;
+}
+.central-admin-drop {
+  display: grid;
+  gap: 12px;
+  text-align: center;
+  border: 1px dashed #688aba;
+  padding: 22px;
+  border-radius: 12px;
+}
+.central-admin-form .admin-publish {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.central-admin-form .admin-publish input {
+  width: 18px;
+  min-height: 18px;
+}
+.central-admin-form p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.cosmic-login {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 110px 14vw 70px 40px;
+  background: radial-gradient(ellipse at 80% 45%, #34559b, #081b42 70%);
+  overflow: hidden;
+}
+.cosmic-login-art {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: url("/admin-cosmic-reference.png") 15% top/auto 215% no-repeat;
+  mask-image: linear-gradient(to right, #000 45%, transparent 80%);
+}
+.cosmic-login:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    #04112bea,
+    transparent 20%,
+    transparent 80%,
+    #061329dd
+  );
+  pointer-events: none;
+}
+.cosmic-login > section:first-of-type:not(.admin-setup) {
+  display: none;
+}
+.cosmic-login-logo {
+  position: absolute;
+  left: 40px;
+  top: 30px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  color: #e6efff !important;
+}
+.cosmic-login-logo > svg {
+  height: 45px;
+  width: 45px;
+  filter: drop-shadow(0 0 8px #8be9ff);
+}
+.cosmic-login-logo > span {
+  font: 29px Georgia;
+  letter-spacing: 0.16em;
+}
+.cosmic-login-logo small {
+  display: block;
+  font: 9px Arial;
+  letter-spacing: 0.3em;
+  margin-top: 7px;
+}
+.cosmic-login form,
+.cosmic-login .admin-setup {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 40px;
+  border: 1px solid #8acfff88;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #143d839e, #30356a99 65%, #103955a8);
+  box-shadow:
+    0 15px 70px #06163b55,
+    inset 0 1px 0 #e9f4ff22;
+  backdrop-filter: blur(18px);
+  color: #dceaff;
+  box-sizing: border-box;
+}
+.cosmic-login h2,
+.cosmic-login .admin-setup h2 {
+  font: 31px Georgia;
+  color: #fff;
+  margin: 0 0 10px;
+}
+.cosmic-login form > p,
+.cosmic-login .admin-recovery p,
+.admin-login.cosmic-login > section.admin-setup > p:not(.admin-error) {
+  color: #c5dcff;
+  display: block;
+  font-size: 12px;
+}
+.cosmic-login form label {
+  color: #cee3ff;
+  font-size: 11px;
+}
+.cosmic-login form input {
+  background: #7797e92b;
+  border: 1px solid #9faefb44;
+  color: #fff;
+  min-height: 44px;
+}
+.cosmic-login form input:focus {
+  border-color: #b7d9ff;
+}
+.cosmic-login .admin-primary {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 44px;
+}
+.cosmic-login .admin-recovery summary {
+  color: #d7e8ff;
+  text-align: center;
+  margin-top: 20px;
+  font-size: 11px;
+}
+.cosmic-login .admin-setup li {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.cosmic-login .admin-setup code {
+  background: #7485b755;
+  color: #fff;
+}
+.cosmic-login a {
+  color: #d7e9ff;
+}
+.cosmic-login .admin-password button {
+  font-size: 10px;
+  border-radius: 0 8px 8px 0;
+}
+.cosmic-login-context {
+  margin-bottom: 6px;
+}
+@media (min-width: 1650px) {
+  .cosmic-bottom-grid {
+    grid-template-columns: 1.2fr 1fr 0.9fr;
+  }
+  .cosmic-bottom-grid > .cosmic-panel:last-child {
+    grid-column: auto;
+  }
+}
+@media (max-width: 1250px) {
+  .cosmic-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .cosmic-activity {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .cosmic-activity .cosmic-section-heading,
+  .cosmic-activity > small {
+    grid-column: 1/-1;
+  }
+  .cosmic-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .cosmic-metric {
+    display: block;
+  }
+  .cosmic-metric .cosmic-icon {
+    margin-bottom: 12px;
+  }
+  .cosmic-login {
+    padding-right: 8vw;
+  }
+}
+@media (max-width: 900px) {
+  .admin-workspace {
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+  .admin-main {
+    padding: 0 18px 24px;
+  }
+  .cosmic-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cosmic-metric {
+    display: flex;
+  }
+  .cosmic-metric .cosmic-icon {
+    margin: 0;
+  }
+  .cosmic-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+  .cosmic-distribution {
+    justify-content: flex-start;
+  }
+  .cosmic-login {
+    padding: 110px 5vw 60px;
+  }
+  .cosmic-login-art {
+    opacity: 0.75;
+  }
+}
+@media (max-width: 600px) {
+  .admin-workspace {
+    grid-template-columns: 1fr;
+  }
+  .admin-workspace aside {
+    padding: 14px 16px;
+    gap: 5px;
+  }
+  .admin-workspace nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin: 8px 0;
+  }
+  .admin-workspace nav button {
+    font-size: 10px !important;
+    padding: 8px !important;
+    gap: 5px;
+  }
+  .cosmic-nav-icon {
+    width: 15px;
+    height: 15px;
+    flex-basis: 15px;
+  }
+  .admin-workspace aside .admin-brand {
+    font-size: 20px;
+  }
+  .admin-workspace .admin-account {
+    margin: 0;
+  }
+  .cosmic-topbar {
+    font-size: 9px;
+  }
+  .cosmic-topbar > span:first-child {
+    display: none;
+  }
+  .cosmic-topbar time {
+    margin-left: 0;
+  }
+  .cosmic-avatar {
+    margin-left: auto;
+  }
+  .admin-heading h1 {
+    font-size: 26px;
+  }
+  .cosmic-metric {
+    display: block;
+    padding: 14px;
+  }
+  .cosmic-metric .cosmic-icon {
+    margin-bottom: 10px;
+  }
+  .cosmic-metric strong {
+    font-size: 29px;
+  }
+  .cosmic-activity {
+    display: flex;
+  }
+  .cosmic-quick {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .cosmic-log-entry {
+    flex-direction: column;
+  }
+  .cosmic-login {
+    padding: 120px 20px 40px;
+    justify-content: center;
+    align-items: center;
+  }
+  .cosmic-login form,
+  .cosmic-login .admin-setup {
+    padding: 28px 22px;
+  }
+  .cosmic-login-logo {
+    left: 23px;
+    top: 28px;
+  }
+  .cosmic-login-art {
+    background-position: 15% top;
+    opacity: 0.8;
+  }
+  .cosmic-login h2,
+  .cosmic-login .admin-setup h2 {
+    font-size: 28px;
+  }
+  .admin-character-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cosmic-world-overview g {
+    transition: none;
+  }
+}
+.cosmic-editorial-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  padding: 14px;
+  border-top: 1px solid #3c578b66;
+  font-size: 11px;
+  color: #9bb8da;
+}
+.cosmic-editorial-shortcuts strong {
+  margin-left: 8px;
+  color: #dfe9ff;
+}
+@media (min-width: 1350px) {
+  .cosmic-bottom-grid {
+    grid-template-columns: 1.15fr 1fr 0.9fr;
+  }
+  .cosmic-bottom-grid > .cosmic-panel:last-child {
+    grid-column: auto;
+  }
+  .cosmic-bottom-grid .cosmic-quick {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .cosmic-distribution {
+    flex-wrap: wrap;
+  }
+  .cosmic-distribution ul {
+    min-width: 90px;
+  }
+}
+.cosmic-login:after {
+  background: linear-gradient(
+    180deg,
+    #04112b 0 120px,
+    transparent 210px,
+    transparent 80%,
+    #061329dd
+  );
+}
+.admin-login.cosmic-login .cosmic-login-logo {
+  margin: 0;
+  z-index: 2;
+}
+.admin-login.cosmic-login .admin-muted {
+  color: #b6cdef;
+}
+.admin-login.cosmic-login form h2 {
+  font:
+    31px Georgia,
+    serif;
+}
+.cosmic-login .cosmic-input {
+  position: relative;
+}
+.cosmic-login .cosmic-input > svg,
+.cosmic-login .admin-password > svg {
+  position: absolute;
+  left: 13px;
+  top: 12px;
+  width: 20px;
+  height: 20px;
+  z-index: 1;
+  color: #d4e5ff;
+  pointer-events: none;
+}
+.cosmic-login .cosmic-input input,
+.cosmic-login .admin-password input {
+  padding-left: 42px;
+}
+.cosmic-login input::placeholder {
+  color: #9cb9e0;
+}
+.cosmic-login .admin-password {
+  position: relative;
+}
+@media (min-width: 1900px) {
+  .cosmic-login-art {
+    background-image: url("/celestial-world.webp");
+    background-size: cover;
+    background-position: center;
+  }
+}
+.cosmic-login:after {
+  background: linear-gradient(
+    180deg,
+    #04112b 0 160px,
+    transparent 240px,
+    transparent 80%,
+    #061329dd
+  );
+}

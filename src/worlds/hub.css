@@ -32,38 +32,67 @@
 }
 .hub-destinations {
   position: absolute;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(1120px, calc(100% - 50px));
-  display: flex;
-  justify-content: center;
-  gap: 8px;
+  inset: 0;
+  pointer-events: none;
   z-index: 2;
 }
 .hub-destinations button {
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 9px 14px;
-  border: 1px solid #ffffff20;
-  border-radius: 24px;
-  background: #081021bb;
-  backdrop-filter: blur(8px);
-}
-.hub-destinations button[aria-current] {
-  color: #e6c58b;
-  border-color: #e6c58b88;
-}
-.hub-destinations i {
-  width: 5px;
-  height: 5px;
-  flex-shrink: 0;
+  position: absolute;
+  left: var(--world-x, 50%);
+  top: var(--world-y, 50%);
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid transparent;
   border-radius: 50%;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+.hub-destinations button:focus-visible {
+  opacity: 1;
+  outline: 1px solid #e6c58b99;
+  outline-offset: 5px;
+  border-color: #e6c58b44;
+  box-shadow: 0 0 24px #e6c58b33;
+}
+.hub-name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.hub-destinations.is-fallback {
+  inset: 280px 24px auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+.hub-destinations.is-fallback button {
+  position: static;
+  transform: none;
+  opacity: 1;
+  width: auto;
+  height: auto;
+  min-height: 44px;
+  padding: 12px 18px;
+  border-radius: 0;
+  border: 1px solid #e6c58b55;
+  background: #080d20;
+  pointer-events: auto;
+}
+.hub-destinations.is-fallback .hub-name {
+  position: static;
+  width: auto;
+  height: auto;
+  clip-path: none;
+  overflow: visible;
+  white-space: normal;
 }
 .hub-context {
   position: absolute;
@@ -233,5 +262,97 @@
   .hub-fallback {
     top: 220px;
     font-size: 12px;
+  }
+}
+
+/* World-native lettering replaces the persistent menu and rectangular hover card. */
+.hub-context {
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  width: min(520px, 70%);
+  padding: 0;
+  background: none;
+  border: 0;
+  backdrop-filter: none;
+  text-align: center;
+}
+.hub-context p {
+  margin: 5px 0;
+}
+.hub-context .hub-empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+.hub-context button {
+  justify-content: center;
+  gap: 12px;
+  border: 0;
+  padding: 8px 16px;
+  width: auto;
+  margin: 0 auto;
+  color: #e6c58b;
+}
+.hub-movement {
+  bottom: 32px;
+}
+@media (max-width: 900px) {
+  .hub-destinations {
+    inset: 0;
+    width: auto;
+    max-width: none;
+    transform: none;
+    display: block;
+  }
+  .hub-context {
+    bottom: 28px;
+  }
+  .hub-movement {
+    bottom: 32px;
+  }
+}
+@media (max-width: 600px) {
+  .hub-destinations {
+    inset: 0;
+    width: auto;
+    display: block;
+  }
+  .hub-destinations button {
+    min-height: 44px;
+    padding: 0;
+  }
+  .hub-context {
+    left: 50%;
+    bottom: 90px;
+    width: 80%;
+    padding: 0;
+  }
+  .hub-context p {
+    font-size: 11px;
+  }
+  .hub-movement {
+    bottom: 26px;
+  }
+  .hub-destinations.is-fallback {
+    inset: 270px 18px auto;
+    display: flex;
+  }
+  .hub-destinations.is-fallback button {
+    padding: 12px;
+  }
+}
+
+.hub-title {
+  transition: opacity 0.4s ease;
+}
+.hub-title[data-interacting="true"] {
+  opacity: 0.15;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub-title {
+    transition: none;
   }
 }

@@ -1,4 +1,8 @@
 import * as T from "three";
+import { createHiddenWorlds } from "./hiddenWorlds";
+import { createWorldTitles } from "./worldTitles";
+import type { Locale } from "../locales";
+import { createHubEnvironment } from "./hubEnvironment";
 import type { World, Discovery } from "../data/universe";
 interface HubOptions {
   worlds: World[];
@@ -10,11 +14,18 @@ interface HubOptions {
   onArrive: (id: string | null) => void;
   onPosition: (x: number, z: number) => void;
   onFail: () => void;
+  onReady: () => void;
+  onAnchors: (anchors: { id: string; x: number; y: number }[]) => void;
 }
 export function createHub(host: HTMLDivElement, o: HubOptions) {
+  let dirty = true;
+  const invalidate = () => {
+    dirty = true;
+  };
+  const gardenEffects: ReturnType<typeof createHiddenWorlds>[] = [];
   const scene = new T.Scene();
   scene.background = new T.Color("#0b1429");
-  scene.fog = new T.FogExp2("#121f36", 0.008);
+  scene.fog = new T.FogExp2("#1b2b44", 0.0065);
   const r = new T.WebGLRenderer({
     antialias: !o.simple,
     powerPreference: "low-power",
@@ -22,10 +33,12 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
   r.setPixelRatio(Math.min(devicePixelRatio, o.simple ? 1 : 1.5));
   r.setSize(host.clientWidth, host.clientHeight);
   r.outputColorSpace = T.SRGBColorSpace;
+  r.toneMapping = T.ACESFilmicToneMapping;
+  r.toneMappingExposure = 1.22;
   host.append(r.domElement);
   r.domElement.setAttribute("aria-hidden", "true");
   const camera = new T.PerspectiveCamera(
-    72,
+    68,
     host.clientWidth / host.clientHeight,
     0.1,
     350,
@@ -42,15 +55,12 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
   let yaw = 0,
     pitch = -0.2;
   camera.rotation.x = pitch;
-  scene.add(new T.HemisphereLight("#bdd6ff", "#283339", 2.7));
-  const sun = new T.DirectionalLight("#f4d8a3", 3);
-  sun.position.set(-15, 30, 20);
+  scene.add(new T.HemisphereLight("#91b4e6", "#17212e", 1.5));
+  const sun = new T.DirectionalLight("#f4d8a3", 3.5);
+  sun.position.set(-35, 24, 12);
   scene.add(sun);
-  const stone = new T.MeshStandardMaterial({
-    color: "#9b8c76",
-    metalness: 0.15,
-    roughness: 0.7,
-  });
+  const environment = createHubEnvironment(scene, o.simple, invalidate);
+  const stone = environment.stone;
   const dark = new T.MeshStandardMaterial({ color: "#26384a", roughness: 0.8 });
   const gold = new T.MeshStandardMaterial({
     color: "#bd9d64",
@@ -99,40 +109,9 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
       g,
     );
   }
-  function island(
-    x: number,
-    z: number,
-    size: number,
-    parent: T.Object3D = scene,
-  ) {
-    mesh(
-      new T.CylinderGeometry(size, size, 0.45, 20),
-      stone,
-      x,
-      -0.35,
-      z,
-      parent,
-    );
-    const rock = mesh(
-      new T.ConeGeometry(size, size * 2.5, 9, 2),
-      dark,
-      x,
-      -size * 1.3,
-      z,
-      parent,
-    );
-    rock.rotation.z = Math.PI;
-    const rim = mesh(
-      new T.TorusGeometry(size, 0.055, 4, 48),
-      gold,
-      x,
-      -0.06,
-      z,
-      parent,
-    );
-    rim.rotation.x = Math.PI / 2;
-  }
+  const island = environment.island;
   island(0, 11, 13);
+  environment.compass();
   for (let i = 0; i < 12; i++) {
     const a = (i * Math.PI) / 6;
     mesh(
@@ -165,89 +144,12 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
     );
     ring.rotation.x = Math.PI / 2;
   }
-  const textures: T.Texture[] = [];
-  const stoneCanvas = document.createElement("canvas");
-  stoneCanvas.width = 128;
-  stoneCanvas.height = 128;
-  const sc = stoneCanvas.getContext("2d");
-  if (sc) {
-    sc.fillStyle = "#b2a48f";
-    sc.fillRect(0, 0, 128, 128);
-    let seed = 17;
-    for (let i = 0; i < 1800; i++) {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      const x = seed % 128;
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      const y = seed % 128;
-      sc.fillStyle = i % 2 ? "#6e6a5d22" : "#e5d6b51c";
-      sc.fillRect(x, y, 2, 2);
-    }
-    sc.strokeStyle = "#4a4b4e55";
-    sc.lineWidth = 1;
-    for (let i = 0; i <= 128; i += 32) {
-      sc.beginPath();
-      sc.moveTo(i, 0);
-      sc.lineTo(i, 128);
-      sc.moveTo(0, i);
-      sc.lineTo(128, i);
-      sc.stroke();
-    }
-    const texture = new T.CanvasTexture(stoneCanvas);
-    texture.wrapS = texture.wrapT = T.RepeatWrapping;
-    texture.repeat.set(3, 3);
-    texture.colorSpace = T.SRGBColorSpace;
-    stone.map = texture;
-    stone.needsUpdate = true;
-    textures.push(texture);
-  }
-  const cloudCanvas = document.createElement("canvas");
-  cloudCanvas.width = 128;
-  cloudCanvas.height = 128;
-  const cc = cloudCanvas.getContext("2d");
-  if (cc) {
-    const g = cc.createRadialGradient(64, 64, 0, 64, 64, 64);
-    g.addColorStop(0, "rgba(154,175,216,.7)");
-    g.addColorStop(0.5, "rgba(112,138,184,.2)");
-    g.addColorStop(1, "rgba(93,115,165,0)");
-    cc.fillStyle = g;
-    cc.fillRect(0, 0, 128, 128);
-    const tex = new T.CanvasTexture(cloudCanvas);
-    textures.push(tex);
-    for (let i = 0; i < (o.simple ? 8 : 17); i++) {
-      const fog = mesh(
-        new T.PlaneGeometry(45, 25),
-        new T.MeshBasicMaterial({
-          map: tex,
-          transparent: true,
-          opacity: 0.4,
-          depthWrite: false,
-          side: T.DoubleSide,
-        }),
-        Math.sin(i * 2.4) * 48,
-        -7 - (i % 3) * 2,
-        4 - i * 5,
-      );
-      fog.rotation.x = -0.7;
-    }
-  }
-  const sky = mesh(
-    new T.SphereGeometry(220, 20, 12),
-    new T.ShaderMaterial({
-      side: T.BackSide,
-      depthWrite: false,
-      vertexShader:
-        "varying vec3 v;void main(){v=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
-      fragmentShader:
-        "varying vec3 v;void main(){float band=exp(-pow((v.y-v.x*.4-.2)*5.,2.));float noise=sin(v.x*17.+v.z*9.)*sin(v.y*23.-v.z*13.)*.5+.5;vec3 base=mix(vec3(.025,.04,.085),vec3(.075,.11,.2),max(0.,v.y));base+=vec3(.075,.04,.13)*band*(.3+noise*.7);gl_FragColor=vec4(base,1.);}",
-    }),
-    0,
-    0,
-    0,
-  );
   const targets: T.Object3D[] = [];
   const paths = new Map<string, T.Vector3[]>();
+  const approachEnds = new Map<string, number>();
   const locations = new Map<string, T.Vector3>();
   const animated: T.Object3D[] = [];
+  const worldLights = new Map<string, T.PointLight>();
   const routeTiles: { position: T.Vector3; length: number; angle: number }[] =
     [];
   o.worlds.forEach((w, index) => {
@@ -257,25 +159,42 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
     g.position.set(x, 0, z);
     g.userData.destination = w.id;
     scene.add(g);
-    island(0, 0, 6, g);
+    if (w.hubKey !== "hidden-worlds") island(0, 0, 6, g);
     const light = new T.PointLight(w.color, 25, 18);
     light.position.set(x, 4, z);
     scene.add(light);
+    worldLights.set(w.id, light);
+    const architecture = new T.Group();
+    g.add(architecture);
     const luminous = glow(w.color);
     switch (w.hubKey) {
       case "what-if":
         for (let j = 0; j < 3; j++) {
-          arch(g, (j - 1) * 3, -Math.abs(j - 1) * 2, w.color, 0.8);
+          arch(architecture, (j - 1) * 3, -Math.abs(j - 1) * 2, w.color, 0.8);
           const curve = new T.CatmullRomCurve3([
             new T.Vector3(0, 0.15, 4),
             new T.Vector3((j - 1) * 2, 0.15, 1),
             new T.Vector3((j - 1) * 3, 0.15, -Math.abs(j - 1) * 2),
           ]);
-          mesh(new T.TubeGeometry(curve, 20, 0.045, 4), luminous, 0, 0, 0, g);
+          mesh(
+            new T.TubeGeometry(curve, 20, 0.045, 4),
+            luminous,
+            0,
+            0,
+            0,
+            architecture,
+          );
         }
         break;
       case "human-mind": {
-        mesh(new T.CylinderGeometry(4, 4, 0.8, 24), gold, 0, 0.4, 0, g);
+        mesh(
+          new T.CylinderGeometry(4, 4, 0.8, 24),
+          gold,
+          0,
+          0.4,
+          0,
+          architecture,
+        );
         const sphere = mesh(
           new T.SphereGeometry(3.6, 24, 18),
           new T.MeshPhysicalMaterial({
@@ -290,7 +209,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
           0,
           4.6,
           0,
-          g,
+          architecture,
         );
         animated.push(sphere);
         for (let i = 0; i < 8; i++) {
@@ -301,7 +220,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
             Math.cos(a) * 2,
             2.5,
             Math.sin(a) * 2,
-            g,
+            architecture,
           );
         }
         for (let i = 0; i < 3; i++) {
@@ -311,7 +230,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
             0,
             4.6,
             0,
-            g,
+            architecture,
           );
           orb.rotation.set(i * 0.7, i * 0.4, 0);
           animated.push(orb);
@@ -319,8 +238,15 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
         break;
       }
       case "unsolved": {
-        mesh(new T.CylinderGeometry(1.5, 2, 11, 8), dark, 0, 5.5, 0, g);
-        mesh(new T.ConeGeometry(1.8, 4, 8), stone, 0, 13, 0, g);
+        mesh(
+          new T.CylinderGeometry(1.5, 2, 11, 8),
+          dark,
+          0,
+          5.5,
+          0,
+          architecture,
+        );
+        mesh(new T.ConeGeometry(1.8, 4, 8), stone, 0, 13, 0, architecture);
         for (let i = 0; i < 6; i++) {
           const a = (i * Math.PI) / 3;
           mesh(
@@ -329,7 +255,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
             Math.cos(a) * 3,
             4,
             Math.sin(a) * 3,
-            g,
+            architecture,
           );
           mesh(
             new T.ConeGeometry(0.5, 2, 5),
@@ -337,53 +263,14 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
             Math.cos(a) * 3,
             9 + (i % 2),
             Math.sin(a) * 3,
-            g,
+            architecture,
           );
         }
-        arch(g, 0, 2.5, w.color);
+        arch(architecture, 0, 2.5, w.color);
         break;
       }
       case "hidden-worlds": {
-        const moss = new T.MeshStandardMaterial({
-          color: "#376c61",
-          roughness: 0.9,
-        });
-        mesh(new T.BoxGeometry(8, 6, 2), moss, 0, 3, -2, g);
-        arch(g, 0, 1, w.color, 1.3);
-        for (let i = 0; i < 15; i++) {
-          const a = i * 2.4;
-          const tx = Math.sin(a) * 4.7,
-            tz = Math.cos(a) * 4.7;
-          mesh(new T.CylinderGeometry(0.1, 0.2, 2, 5), dark, tx, 1, tz, g);
-          mesh(
-            new T.IcosahedronGeometry(0.7 + (i % 3) * 0.2),
-            moss,
-            tx,
-            2.4,
-            tz,
-            g,
-          );
-          mesh(new T.SphereGeometry(0.12, 5, 4), luminous, tx, 2.9, tz, g);
-        }
-        for (const tx of [-3, 3]) {
-          const falls = mesh(
-            new T.PlaneGeometry(0.5, 9),
-            glow("#9fdfe8", 0.45),
-            tx,
-            -0.5,
-            2,
-            g,
-          );
-          animated.push(falls);
-        }
-        mesh(
-          new T.CylinderGeometry(3, 3, 0.1, 24),
-          glow(w.color, 0.4),
-          0,
-          0.1,
-          0,
-          g,
-        );
+        gardenEffects.push(createHiddenWorlds(g, o.simple, invalidate));
         break;
       }
       case "your-future": {
@@ -401,7 +288,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
             tx,
             h / 2,
             tz,
-            g,
+            architecture,
           );
           mesh(
             new T.BoxGeometry(0.04, h + 0.5, 0.04),
@@ -409,7 +296,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
             tx + 0.42,
             (h + 0.5) / 2,
             tz + 0.51,
-            g,
+            architecture,
           );
         }
         const ring = mesh(
@@ -418,10 +305,10 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
           0,
           4,
           0,
-          g,
+          architecture,
         );
         ring.rotation.x = Math.PI / 2;
-        mesh(new T.ConeGeometry(0.2, 6, 5), luminous, 0, 13, 0, g);
+        mesh(new T.ConeGeometry(0.2, 6, 5), luminous, 0, 13, 0, architecture);
         break;
       }
       default: {
@@ -433,18 +320,18 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
             Math.cos(a) * 3.8,
             2.5,
             Math.sin(a) * 3.8,
-            g,
+            architecture,
           );
         }
-        mesh(new T.CylinderGeometry(5, 5, 0.4, 8), gold, 0, 5, 0, g);
-        mesh(new T.ConeGeometry(5.5, 2.4, 8), dark, 0, 6.4, 0, g);
+        mesh(new T.CylinderGeometry(5, 5, 0.4, 8), gold, 0, 5, 0, architecture);
+        mesh(new T.ConeGeometry(5.5, 2.4, 8), dark, 0, 6.4, 0, architecture);
         const orb = mesh(
           new T.SphereGeometry(1.5, 16, 12),
           new T.MeshBasicMaterial({ color: w.color, wireframe: true }),
           0,
           8.8,
           0,
-          g,
+          architecture,
         );
         animated.push(orb);
         for (let i = 0; i < 4; i++) {
@@ -454,14 +341,15 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
             Math.sin(i * 2) * 4,
             1.5 + i * 0.6,
             Math.cos(i * 2) * 3,
-            g,
+            architecture,
           );
           book.rotation.z = i * 0.3;
           animated.push(book);
         }
-        arch(g, 0, 3, w.color);
+        arch(architecture, 0, 3, w.color);
       }
     }
+    if (w.hubKey !== "hidden-worlds") architecture.scale.set(1.12, 1.4, 1.12);
     g.traverse((obj) => {
       if (obj instanceof T.Mesh) {
         obj.userData.destination = w.id;
@@ -502,6 +390,23 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
     const curve = new T.QuadraticBezierCurve3(start, bend, end);
     const points = curve.getPoints(o.simple ? 20 : 32);
     paths.set(w.id, points);
+    if (w.hubKey === "hidden-worlds") {
+      // Approach the garden from its real walkway, rather than landing inside the arch.
+      const viewpoint = new T.Vector3(x, 0.02, z + 12);
+      let nearestIndex = 0;
+      points.forEach((point, i) => {
+        if (
+          point.distanceTo(viewpoint) <
+          points[nearestIndex].distanceTo(viewpoint)
+        )
+          nearestIndex = i;
+      });
+      locations.set(
+        w.id,
+        new T.Vector3(points[nearestIndex].x, eye, points[nearestIndex].z),
+      );
+      approachEnds.set(w.id, nearestIndex + 1);
+    }
     for (let i = 1; i < points.length; i++) {
       const a = points[i - 1],
         b = points[i],
@@ -512,45 +417,22 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
         angle: Math.atan2(b.x - a.x, b.z - a.z),
       });
     }
-    for (const offset of [-1.45, 1.45]) {
-      const rail = points.map((p) =>
-        p.clone().add(new T.Vector3(offset, 0.12, 0)),
-      );
-      mesh(
-        new T.TubeGeometry(new T.CatmullRomCurve3(rail), 32, 0.035, 3),
-        luminous,
-        0,
-        0,
-        0,
-      );
-    }
   });
   routeTiles.push({
-    position: new T.Vector3(0, -0.05, (initialZ + 11) / 2),
-    length: initialZ - 11 + 1,
+    position: new T.Vector3(0, -0.05, (initialZ + 24) / 2),
+    length: initialZ - 24 + 1,
     angle: 0,
   });
-  const tiles = new T.InstancedMesh(
-    new T.BoxGeometry(1, 1, 1),
-    new T.MeshStandardMaterial({
-      color: "#5b6571",
-      roughness: 0.6,
-      metalness: 0.25,
-    }),
-    routeTiles.length,
-  );
-  const dummy = new T.Object3D();
-  routeTiles.forEach((t, i) => {
-    dummy.position.copy(t.position);
-    dummy.scale.set(2.8, 0.16, t.length);
-    dummy.rotation.y = t.angle;
-    dummy.updateMatrix();
-    tiles.setMatrixAt(i, dummy.matrix);
-  });
-  scene.add(tiles);
+  environment.bridges(routeTiles);
   // Bounded distant islands and starfield establish depth without copying the reference image.
   for (let i = 0; i < 12; i++)
-    island(Math.sin(i * 2.4) * 75, -65 - i * 4, 1.5 + (i % 3));
+    island(
+      Math.sin(i * 2.4) * 75,
+      -65 - i * 4,
+      4.5 + (i % 3) * 2,
+      scene,
+      false,
+    );
   let random = 37;
   const rnd = () => {
     random = (random * 1664525 + 1013904223) >>> 0;
@@ -576,6 +458,8 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
     ),
   );
   mesh(new T.SphereGeometry(6, 24, 18), glow("#adc4eb", 0.7), -8, 25, -100);
+  const titles = createWorldTitles(scene, o.worlds, o.simple, invalidate);
+  let focused: string | null = null;
   const keys = new Set<string>();
   let auto: T.Vector3[] = [];
   let target: string | null = null;
@@ -601,7 +485,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
       if (list.some((p) => Math.hypot(x - p.x, z - p.z) < 1.8)) return true;
     return false;
   }
-  function go(id: string) {
+  function go(id: string, instant = false) {
     if (
       (target === id && auto.length) ||
       (arrived === id && camera.position.distanceTo(locations.get(id)!) < 1)
@@ -610,7 +494,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
     const path = paths.get(id);
     if (!path) return;
     target = id;
-    if (o.reduced) {
+    if (o.reduced || instant) {
       camera.position.copy(locations.get(id)!);
       auto = [];
       arrived = id;
@@ -634,7 +518,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
       }
     auto = [
       ...(nearPath ? nearPath.slice(0, nearIndex + 1).reverse() : []),
-      ...path,
+      ...path.slice(0, approachEnds.get(id) ?? path.length),
     ].map((p) => new T.Vector3(p.x, eye, p.z));
   }
   function pointerDown(e: PointerEvent) {
@@ -671,6 +555,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
       r.domElement.style.cursor = id ? "pointer" : "grab";
       if (id !== hovered) {
         hovered = id;
+        titles.select(focused || hovered || arrived);
         o.onHover(id);
       }
     }
@@ -685,6 +570,8 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
         return;
       }
       if (data?.destination) {
+        hovered = data.destination;
+        titles.select(hovered);
         go(data.destination);
         o.onHover(data.destination);
       }
@@ -713,6 +600,13 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
       auto = [];
     }
   }
+  const leave = () => {
+    hovered = null;
+    titles.select(focused || arrived);
+    o.onHover(null);
+    r.domElement.style.cursor = "grab";
+  };
+  r.domElement.addEventListener("pointerleave", leave);
   const keyup = (e: KeyboardEvent) => keys.delete(e.key);
   const blur = () => {
     keys.clear();
@@ -735,9 +629,15 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
       camera.aspect = host.clientWidth / host.clientHeight;
       camera.updateProjectionMatrix();
       r.setSize(host.clientWidth, host.clientHeight);
+      invalidate();
     }
   });
   resize.observe(host);
+  const renderedPosition = new T.Vector3(Infinity, Infinity, Infinity);
+  const renderedRotation = new T.Euler();
+  let lastRender = 0;
+  let firstFrame = true;
+  let lastAuto = performance.now();
   let frame = 0,
     last = performance.now(),
     lastReport = 0;
@@ -748,15 +648,23 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
     if (document.hidden) return;
     if (!paused) {
       if (auto.length) {
-        const delta = auto[0].clone().sub(camera.position);
-        const step = dt * 12;
-        if (delta.length() <= step) {
-          camera.position.copy(auto.shift()!);
-          if (!auto.length && target) {
-            arrived = target;
-            o.onArrive(target);
+        // Carry distance across short path segments instead of losing time at each waypoint.
+        let remaining = Math.min((now - lastAuto) / 1000, 0.1) * 12;
+        while (auto.length && remaining > 0) {
+          const delta = auto[0].clone().sub(camera.position),
+            distance = delta.length();
+          if (distance <= remaining) {
+            camera.position.copy(auto.shift()!);
+            remaining -= distance;
+            if (!auto.length && target) {
+              arrived = target;
+              o.onArrive(target);
+            }
+          } else {
+            camera.position.addScaledVector(delta, remaining / distance);
+            remaining = 0;
           }
-        } else camera.position.addScaledVector(delta.normalize(), step);
+        }
       } else {
         let dx =
             Number(keys.has("d") || keys.has("ArrowRight")) -
@@ -776,16 +684,58 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
         if (onRoad(nx, nz)) camera.position.set(nx, eye, nz);
       }
     }
-    if (!o.reduced)
-      animated.forEach((obj, i) => {
-        if ((obj as T.Mesh).geometry?.type === "PlaneGeometry") {
-          obj.scale.y = 1 + Math.sin(now * 0.0008 + i) * 0.035;
-        } else obj.rotation.y += dt * 0.06 * (i % 2 ? 1 : -1);
-      });
-    r.render(scene, camera);
+    lastAuto = now;
+    const cameraChanged =
+      !camera.position.equals(renderedPosition) ||
+      !camera.rotation.equals(renderedRotation);
+    const shouldRender =
+      dirty ||
+      firstFrame ||
+      cameraChanged ||
+      (o.reduced && titles.busy(true)) ||
+      (!o.reduced && now - lastRender >= 1000 / 30);
+    if (shouldRender) {
+      if (!o.reduced)
+        animated.forEach((obj, i) => {
+          if ((obj as T.Mesh).geometry?.type === "PlaneGeometry") {
+            obj.scale.y = 1 + Math.sin(now * 0.0008 + i) * 0.035;
+          } else obj.rotation.y += dt * 0.06 * (i % 2 ? 1 : -1);
+        });
+      titles.update(now / 1000, dt, camera, o.reduced);
+      worldLights.forEach(
+        (light, id) =>
+          (light.intensity = id === (focused || hovered) ? 43 : 25),
+      );
+      environment.update(now / 1000, o.reduced);
+      gardenEffects.forEach((effect) => effect.update(now / 1000, o.reduced));
+      r.render(scene, camera);
+      if (firstFrame) {
+        firstFrame = false;
+        o.onReady();
+      }
+      dirty = false;
+      lastRender = now;
+      renderedPosition.copy(camera.position);
+      renderedRotation.copy(camera.rotation);
+    }
     if (now - lastReport > 300) {
       lastReport = now;
       o.onPosition(camera.position.x, camera.position.z);
+      camera.updateMatrixWorld();
+      o.onAnchors(
+        o.worlds.map((w) => {
+          const p = new T.Vector3(
+            w.hubPosition![0],
+            5,
+            w.hubPosition![2],
+          ).project(camera);
+          return {
+            id: w.id,
+            x: T.MathUtils.clamp((p.x * 0.5 + 0.5) * 100, 5, 95),
+            y: T.MathUtils.clamp((-p.y * 0.5 + 0.5) * 100, 25, 80),
+          };
+        }),
+      );
       let nearby: string | null = null;
       for (const [id, p] of locations)
         if (Math.hypot(camera.position.x - p.x, camera.position.z - p.z) < 5)
@@ -794,11 +744,18 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
         arrived = nearby;
         o.onArrive(nearby);
       }
+      titles.select(focused || hovered || arrived);
     }
   }
   frame = requestAnimationFrame(tick);
   return {
     go,
+    emphasize: (id: string | null) => {
+      focused = id;
+      titles.select(focused || hovered);
+      invalidate();
+    },
+    setLocale: (locale: Locale) => titles.setLocale(locale),
     move: (key: string, active: boolean) => {
       auto = [];
       active ? keys.add(key) : keys.delete(key);
@@ -822,6 +779,7 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
       window.removeEventListener("keydown", keydown);
       window.removeEventListener("keyup", keyup);
       window.removeEventListener("blur", blur);
+      r.domElement.removeEventListener("pointerleave", leave);
       r.domElement.removeEventListener("pointerdown", pointerDown);
       r.domElement.removeEventListener("pointermove", pointerMove);
       r.domElement.removeEventListener("pointerup", pointerUp);
@@ -829,13 +787,16 @@ export function createHub(host: HTMLDivElement, o: HubOptions) {
       r.domElement.removeEventListener("webglcontextlost", lost);
       scene.traverse((obj) => {
         const m = obj as T.Mesh;
+        if (obj instanceof T.InstancedMesh) obj.dispose();
         if (m.geometry) m.geometry.dispose();
         if (m.material)
           (Array.isArray(m.material) ? m.material : [m.material]).forEach(
             (mat) => mat.dispose(),
           );
       });
-      textures.forEach((texture) => texture.dispose());
+      gardenEffects.forEach((effect) => effect.dispose());
+      titles.dispose();
+      environment.dispose();
       r.dispose();
       r.domElement.remove();
     },

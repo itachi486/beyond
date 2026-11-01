@@ -34,14 +34,41 @@ export async function verifyPassword(password, hash) {
   const target = Buffer.from(parts[5], "hex");
   return target.length === key.length && timingSafeEqual(target, key);
 }
-export async function createInitialAdmin(db, email, password) {
+export function adminAllowedEmail(env = process.env) {
+  const email = normalizeEmail(env.ADMIN_ALLOWED_EMAIL);
+  if (
+    !validEmail(email) ||
+    !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(
+      email,
+    )
+  )
+    return "";
+  const local = email.split("@")[0];
+  return local.startsWith(".") || local.endsWith(".") || local.includes("..")
+    ? ""
+    : email;
+}
+export async function createInitialAdmin(
+  db,
+  email,
+  password,
+  env = process.env,
+) {
   email = normalizeEmail(email);
-  if (!validEmail(email)) throw Error("A valid email is required.");
+  const allowed = adminAllowedEmail(env);
+  if (!allowed)
+    throw Error(
+      "Configure one valid ADMIN_ALLOWED_EMAIL before administrator setup.",
+    );
+  if (!validEmail(email) || email !== allowed)
+    throw Error("This email is not authorized for administrator setup.");
   if (db.prepare("SELECT 1 FROM admins LIMIT 1").get())
     throw Error("An administrator already exists. Bootstrap is disabled.");
   const hash = await hashPassword(password);
   db.exec("BEGIN IMMEDIATE");
   try {
+    if (adminAllowedEmail(env) !== email)
+      throw Error("Administrator authorization changed during setup.");
     if (db.prepare("SELECT 1 FROM admins LIMIT 1").get())
       throw Error("An administrator already exists. Bootstrap is disabled.");
     db.prepare("INSERT INTO admins VALUES(?,?,?,?)").run(
@@ -59,7 +86,16 @@ export async function createInitialAdmin(db, email, password) {
 export function cookieName(production) {
   return production ? "__Host-beyond_admin" : "beyond_admin";
 }
-export function findSession(db, request, production, now = Date.now()) {
+export function findSession(
+  db,
+  request,
+  production,
+  now = Date.now(),
+  env = process.env,
+) {
+  const allowed = adminAllowedEmail(env);
+  if (!allowed || db.prepare("SELECT COUNT(*) AS n FROM admins").get().n !== 1)
+    return null;
   const cookie = request.headers.cookie || "";
   const token = cookie
     .split(";")
@@ -70,9 +106,9 @@ export function findSession(db, request, production, now = Date.now()) {
   return (
     db
       .prepare(
-        "SELECT s.*,a.email FROM sessions s JOIN admins a ON a.id=s.admin_id WHERE token_hash=? AND expires_at>?",
+        "SELECT s.*,a.email FROM sessions s JOIN admins a ON a.id=s.admin_id WHERE token_hash=? AND expires_at>? AND a.email=?",
       )
-      .get(digest(token), now) || null
+      .get(digest(token), now, allowed) || null
   );
 }
 export function newSession(

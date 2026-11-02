@@ -13,6 +13,7 @@ import BackupImport, {
   ExportBackup,
 } from "../features/creation/BackupControls";
 import CreateWorldModal from "../features/creation/CreateWorldModal";
+const ConnectHub = lazy(()=>import('../features/connect/ConnectHub'));
 const SpiritEditor = lazy(() => import("../features/creation/SpiritEditor"));
 import WorldEditor from "../features/creation/WorldEditor";
 import { loadWorlds, type CreatedWorld } from "../features/creation/worldStore";
@@ -235,6 +236,7 @@ export default function HiddenWorldsPage({
     setActive(id);
     setLegacy(false);
     setStored(loadWorlds());
+    if(id==='connect'){const next=new URLSearchParams(params);next.set('connect','1');setParams(next);return;}
     setPanel(id);
   }
   if (editorWorld?.version === 2)
@@ -266,6 +268,7 @@ export default function HiddenWorldsPage({
         onExit={closeEditor}
       />
     );
+  if(params.get('connect')==='1')return <Suspense fallback={<p className="scene-loading">Opening CONNECT…</p>}><ConnectHub key={account.epoch+':'+(account.user?.id||'guest')} onBack={()=>{const next=new URLSearchParams(params);next.delete('connect');setParams(next);}} onCreate={()=>{const next=new URLSearchParams(params);next.delete('connect');setParams(next);setPanel('create');}}/></Suspense>;
   return (
     <section
       className={`hidden-world-page${overview ? " hidden-overview" : ""}`}

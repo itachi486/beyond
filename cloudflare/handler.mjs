@@ -1,3 +1,4 @@
+import {connectAPI} from './connect-api.mjs';
 import {readAPI} from './read-api.mjs';
 import {b10API} from './b10-api.mjs';
 import {memberManagementAPI} from "./member-management.mjs";
@@ -15,6 +16,7 @@ export async function cloudflareFetch(request,env,{SQL,loadSQL,codecs,aiTranspor
  const url=new URL(request.url);
  if(url.pathname!=='/api'&&!url.pathname.startsWith('/api/'))return env.ASSETS.fetch(request);
  if(!env.DB||!env.MEDIA||!env.APP_ORIGIN)return Response.json({error:'Cloudflare bindings are not configured.'},{status:503});
+ const connected=await connectAPI(request,env);if(connected)return connected;
  const native=await b10API(request,env,{validateWorld});if(native)return native;
  if(url.pathname==='/api/ai/capabilities')return textAPI(request,null,env);
  if(url.pathname==='/api/user/auth/status'&&request.method==='GET')return userAuthAPI(request,null,env);

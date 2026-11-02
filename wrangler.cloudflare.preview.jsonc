@@ -26,6 +26,7 @@
   "vars": {
     "APP_ORIGIN": "https://beyond-cloudflare-preview.itach9279.workers.dev",
     "BEYOND_STAGE": "migration-preview",
+    "CONNECT_ENABLED": "1",
     "TIGRIS_BUCKET_NAME": "beyond-preview",
     "TIGRIS_ENDPOINT": "https://t3.storage.dev",
     "AI_SERVICE_DAILY_NEURONS": "9000",

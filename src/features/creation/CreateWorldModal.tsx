@@ -1,3 +1,4 @@
+import CreateConnectChoices from '../connect/CreateConnectChoices';
 import {creationIntent} from "../account/creationIntent";
 import {useAuthorAccess} from "./authorAccess";
 import {useAccount} from "../account/AccountProvider";
@@ -163,6 +164,7 @@ export default function CreateWorldModal({
               {es ? "Describe tu mundo." : "Enter a world description."}
             </small>
           )}
+          <CreateConnectChoices key={account.epoch+':'+(account.user?.id||'guest')}/>
           <PublishedImages category="hidden-worlds" selected={starter?.id} onSelect={setStarter}/>
           {needsAccount&&<p role="status">Your selection is kept. <Link to="/register">Create Free Account</Link> or <Link to="/login">Log In</Link> to save this personal world.</p>}
           {error && (

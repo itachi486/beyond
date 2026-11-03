@@ -1,3 +1,4 @@
+import CharacterIdentityEditor from './CharacterIdentityEditor';
 import PermanentDelete from "./PermanentDelete";
 import { t } from "./i18n";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -547,6 +548,7 @@ export default function CentralCharacters({
               </button>
             </div>
           </form>
+          {editing&&<CharacterIdentityEditor key={editing.id} characterId={editing.id} request={request}/>}
         </Overlay>
       )}
     </section>

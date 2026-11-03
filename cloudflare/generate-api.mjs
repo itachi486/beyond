@@ -28,7 +28,13 @@ ai=ai.replace('"missing_api_key"','"missing_ai_binding"');
 // Preserve specific Preview AI safety/provider causes through the existing image API.
 ai=ai.replace('import {workersImage}', 'import {workersImage,aiStatus}');
 ai=ai.replace('error: "daily_limit_reached", usage: limit', 'error: limit.used >= limit.limit ? "image_daily_limit_reached" : "image_attempt_limit_reached", usage: limit');
-ai=ai.replace('"unsupported_reference",', '"text_budget_exhausted", "image_budget_exhausted", "image_daily_limit_reached", "cloudflare_free_allocation_exhausted", "provider_quota_unconfirmed", "workers_cpu_limit", "service_unavailable", "network_error", "request_timeout", "unsupported_reference",');
+ai=ai.replace('"unsupported_reference",', '"service_budget_exhausted", "text_budget_exhausted", "image_budget_exhausted", "image_daily_limit_reached", "cloudflare_free_allocation_exhausted", "provider_quota_unconfirmed", "workers_cpu_limit", "service_unavailable", "network_error", "request_timeout", "unsupported_reference",');
 ai=ai.replace('send(res, 502, { error: code, requestId: input.requestId });', 'send(res, aiStatus(code), { error: code, requestId: input.requestId });');
 ai=ai.replace('send(res, 502, { error: row.error_code, requestId: row.id });', 'send(res, aiStatus(row.error_code), { error: row.error_code, requestId: row.id });');
 await writeFile('cloudflare/generated/ai-images.mjs',ai);
+
+// Preview has no per-account image success-count cap; common Neuron admission remains authoritative.
+const imageTarget='cloudflare/generated/ai-images.mjs';
+let imageSource=await readFile(imageTarget,'utf8');
+for(const [from,to]of [['free: integer("AI_IMAGE_FREE_DAILY_LIMIT", 3, 100),','free: null,'],['premium: integer("AI_IMAGE_PREMIUM_DAILY_LIMIT", 20, 1000),','premium: null,'],['limit.used >= limit.limit','limit.limit !== null && limit.used >= limit.limit']]){if(!imageSource.includes(from))throw Error('Image count source contract changed');imageSource=imageSource.split(from).join(to);}
+await writeFile(imageTarget,imageSource);

@@ -9,7 +9,8 @@ const range=(v,a,b)=>typeof v==='number'&&Number.isFinite(v)&&v>=a&&v<=b;
 const ids=(v,max=100)=>Array.isArray(v)&&v.length<=max&&v.every(uuid)&&new Set(v).size===v.length;
 const point=v=>{keys(v,'x y');if(!range(v.x,0,1)||!range(v.y,0,1))bad();};
 export function nestedWorld(w){
- keys(w,'version id name description createdAt updatedAt theme objects graph starter backupFingerprint ownerId cloudVersion');
+ keys(w,'version id name description introduction visibility createdAt updatedAt theme objects graph starter backupFingerprint ownerId cloudVersion');
+ if(!optionalText(w.introduction,2000)||w.visibility!==undefined&&w.visibility!=='private')bad();
  if(!optionalText(w.backupFingerprint,64))bad();
  if(w.ownerId!==undefined&&(typeof w.ownerId!=='string'||!/^[a-zA-Z0-9_-]{1,100}$/.test(w.ownerId)))bad();
  if(w.cloudVersion!==undefined&&(!Number.isSafeInteger(w.cloudVersion)||w.cloudVersion<0))bad();

@@ -24,7 +24,7 @@ export function validateNativeJSON(world,sidecars,{legacy=false}={}){
  }
  if(Buffer.byteLength(JSON.stringify({world,sidecars}))>512*1024)fail('world_record_too_large');
 }
-export async function validateNativeAssets(repo,actor,world,media){
+export async function validateNativeAssets(repo,actor,world,media,{digest,verifyUnchanged,onVerified}={}){
  const validated=[];
  const ids=[...new Set([...(world.starter?[world.starter.assetId]:[]),...(world.graph?.characters||[]).map(c=>c.uploadedAssetId).filter(Boolean)])];
  for(const id of ids){
@@ -35,12 +35,14 @@ export async function validateNativeAssets(repo,actor,world,media){
   let metadata;try{metadata=JSON.parse(row.metadata);}catch{fail('invalid_asset_metadata');}
   if(!record(metadata)||!['png','jpeg','webp','glb','gltf'].includes(metadata.format)||!Number.isSafeInteger(metadata.bytes)||metadata.bytes<1||metadata.bytes>20*1024*1024)fail('invalid_asset_metadata');
   if(world.starter?.assetId===id&&!['png','jpeg','webp'].includes(metadata.format))fail('invalid_starter_format');
+  if(verifyUnchanged&&await verifyUnchanged(row,metadata)){validated.push(row);continue;}
   const object=await media?.get(row.file_key);if(object?.size>20*1024*1024)fail('asset_file_too_large');if(!object)fail('asset_file_unavailable');
   const bytes=Buffer.from(await object.arrayBuffer());
-  if(bytes.length!==metadata.bytes||createHash('sha256').update(bytes).digest('hex')!==row.hash)fail('asset_integrity_mismatch');
+  if(bytes.length!==metadata.bytes||(digest?await digest(bytes):createHash('sha256').update(bytes).digest('hex'))!==row.hash)fail('asset_integrity_mismatch');
   if(['png','jpeg','webp'].includes(metadata.format)){try{imageHeader(bytes,metadata.format);}catch{fail('invalid_asset_format');}}
   else if(metadata.format==='glb'){if(bytes.length<12||bytes.toString('ascii',0,4)!=='glTF'||bytes.readUInt32LE(8)!==bytes.length)fail('invalid_asset_format');}
   else {try{const model=JSON.parse(bytes.toString('utf8'));if(model.asset?.version!=='2.0')fail('invalid_asset_format');}catch{fail('invalid_asset_format');}}
+  if(onVerified)await onVerified(row,metadata,object);
   validated.push(row);
  }
  return validated;

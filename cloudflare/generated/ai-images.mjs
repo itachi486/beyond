@@ -42,8 +42,8 @@ export function imagePolicy(env = process.env) {
     editEndpoint:
       env.AI_IMAGE_EDIT_ENDPOINT ||
       endpoint.replace(/\/generations$/, "/edits"),
-    free: integer("AI_IMAGE_FREE_DAILY_LIMIT", 3, 100),
-    premium: integer("AI_IMAGE_PREMIUM_DAILY_LIMIT", 20, 1000),
+    free: null,
+    premium: null,
     maxAttempts: integer("AI_IMAGE_DAILY_ATTEMPT_LIMIT", 60, 2000),
     premiumIds: new Set(
       (env.AI_IMAGE_PREMIUM_CREATOR_IDS || "")
@@ -309,9 +309,9 @@ export function createImageAPI(
             "SELECT COUNT(*) n FROM ai_generations WHERE creator_id=? AND day=?",
           )
           .get(session.admin_id, day()).n;
-        if (limit.used >= limit.limit || attempts >= policy.maxAttempts) {
+        if (limit.limit !== null && limit.used >= limit.limit || attempts >= policy.maxAttempts) {
           db.exec("COMMIT");
-          send(res, 429, { error: limit.used >= limit.limit ? "image_daily_limit_reached" : "image_attempt_limit_reached", usage: limit });
+          send(res, 429, { error: limit.limit !== null && limit.used >= limit.limit ? "image_daily_limit_reached" : "image_attempt_limit_reached", usage: limit });
           return true;
         }
         db.prepare(
@@ -362,7 +362,7 @@ export function createImageAPI(
         );
       } catch (e) {
         const code = [
-          "text_budget_exhausted", "image_budget_exhausted", "image_daily_limit_reached", "cloudflare_free_allocation_exhausted", "provider_quota_unconfirmed", "workers_cpu_limit", "service_unavailable", "network_error", "request_timeout", "unsupported_reference",
+          "service_budget_exhausted", "text_budget_exhausted", "image_budget_exhausted", "image_daily_limit_reached", "cloudflare_free_allocation_exhausted", "provider_quota_unconfirmed", "workers_cpu_limit", "service_unavailable", "network_error", "request_timeout", "unsupported_reference",
           "daily_limit_reached",
           "invalid_image",
           "invalid_reference",

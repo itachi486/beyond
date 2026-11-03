@@ -1,3 +1,4 @@
+import {studioTables,studioSchema} from './studio-schema.mjs';
 import {budgetCertificationSchema} from './budget-schema.mjs';
 import {randomUUID,createHash} from 'node:crypto';
 import {schema,managedImageSchema,userSchema,memberSchema} from './schema.mjs';
@@ -5,11 +6,12 @@ export const tables=['admins','worlds','discoveries','connections','revisions','
 const bind=v=>v instanceof Uint8Array?Array.from(v):v;
 export class CommitConflict extends Error {}
 const templates=new WeakMap();
-function emptyDatabase(SQL,hasBudgetUnits=false,hasProof=false){let variants=templates.get(SQL);if(!variants){variants=new Map();templates.set(SQL,variants);}let bytes=variants.get(`${hasBudgetUnits}:${hasProof}`);if(!bytes){const seed=new SQL.Database();try{seed.exec(schema+managedImageSchema+userSchema+memberSchema);if(hasBudgetUnits)seed.exec('ALTER TABLE workers_ai_requests ADD COLUMN reserved_units TEXT');if(hasProof)seed.exec(budgetCertificationSchema);bytes=seed.export();variants.set(`${hasBudgetUnits}:${hasProof}`,bytes);}finally{seed.close();}}return new SQL.Database(bytes);}
+function emptyDatabase(SQL,hasBudgetUnits=false,hasProof=false){let variants=templates.get(SQL);if(!variants){variants=new Map();templates.set(SQL,variants);}let bytes=variants.get(`${hasBudgetUnits}:${hasProof}`);if(!bytes){const seed=new SQL.Database();try{seed.exec(schema+managedImageSchema+userSchema+memberSchema+studioSchema);if(hasBudgetUnits)seed.exec('ALTER TABLE workers_ai_requests ADD COLUMN reserved_units TEXT');if(hasProof)seed.exec(budgetCertificationSchema);bytes=seed.export();variants.set(`${hasBudgetUnits}:${hasProof}`,bytes);}finally{seed.close();}}return new SQL.Database(bytes);}
 // A bounded synchronous compatibility view preserves the existing SQL contracts.
 // D1 is authoritative; only captured parameterized writes are replayed atomically.
 export async function openD1Store(binding,SQL,{authorization=null,maxRows=20000,selectedTables=tables}={}){
- const selected=tables.filter(t=>selectedTables.includes(t));
+ const available=[...tables,...studioTables.filter(t=>selectedTables.includes(t))];
+ const selected=available.filter(t=>selectedTables.includes(t));
  const [proofSchema]=await binding.batch([binding.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='b10_ledger_certifications'")]);
  const hasProof=!!proofSchema.results.length;
  if(hasProof&&selected.includes('workers_ai_requests'))selected.push('b10_ledger_certifications');
@@ -96,7 +98,7 @@ export async function openD1Store(binding,SQL,{authorization=null,maxRows=20000,
      // This covers INSERT, REPLACE, UPDATE, quoted identifiers and CTE writers.
      // Reads stay compatible; only a write/forced commit requires valid revisions.
      const revisionChecks=[];
-     for(const table of tables){
+     for(const table of available){
        const columns=db.prepare('PRAGMA table_info('+table+')').all().filter(c=>['version','revision','credential_version','cleanup_generation'].includes(c.name));
        if(columns.length&&pending.some(({sql})=>new RegExp('(?:^|[^a-zA-Z0-9_])'+table+'(?:$|[^a-zA-Z0-9_])','i').test(sql))){
          const invalid=columns.map(c=>`typeof(${c.name})<>'integer' OR ${c.name}<0 OR ${c.name}>9007199254740991`).join(' OR ');

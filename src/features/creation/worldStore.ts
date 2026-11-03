@@ -32,6 +32,8 @@ export type CreatedWorld = {
   id: string;
   name: string;
   description: string;
+  introduction?: string;
+  visibility?: "private";
   createdAt: string;
   updatedAt: string;
   theme: "celestial" | "forest" | "void";
@@ -48,6 +50,8 @@ export function validWorld(v: unknown): v is CreatedWorld {
     (w.backupFingerprint === undefined ||
       /^[a-f0-9]{64}$/.test(w.backupFingerprint)) &&
     (w.starter===undefined || (w.starter && /^[a-f0-9-]{36}$/.test(w.starter.imageId) && /^[a-f0-9-]{36}$/.test(w.starter.assetId) && Number.isInteger(w.starter.version) && w.starter.version>0 && /^[a-f0-9]{64}$/.test(w.starter.hash))) &&
+    (w.introduction===undefined || (typeof w.introduction==="string" && w.introduction.length<=2000)) &&
+    (w.visibility===undefined || w.visibility==="private") &&
     typeof w.id === "string" &&
     w.id.length <= 100 &&
     typeof w.name === "string" &&

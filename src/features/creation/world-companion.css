@@ -2,3 +2,5 @@
 .world-companion{bottom:var(--companion-keyboard,0px)}
 
 .companion-bubble{width:min(370px,calc(100vw - 28px));box-sizing:border-box;overflow-wrap:anywhere}.companion-top>div:last-child{display:flex;flex-shrink:0;align-items:center}
+
+.companion-top>div:last-child{flex-shrink:1;flex-wrap:wrap;justify-content:flex-end;gap:6px}.companion-top button{margin-left:0}.companion-top>div:first-child{min-width:0;max-width:36%;overflow-wrap:anywhere}

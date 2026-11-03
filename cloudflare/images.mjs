@@ -1,7 +1,7 @@
 import {runtime} from './context.mjs';
 import {fail} from '../server/validation.mjs';
 export function imageHeader(bytes,format){
- const b=Buffer.from(bytes);let width,height;
+ const b=Buffer.isBuffer(bytes)?bytes:Buffer.from(bytes);let width,height;
  if(format==='png'){
    if(b.length<33||!b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))||b.toString('ascii',12,16)!=='IHDR')fail(400,'Invalid PNG signature.');
    width=b.readUInt32BE(16);height=b.readUInt32BE(20);let offset=8,ended=false;

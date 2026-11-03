@@ -93,8 +93,22 @@ export default function HiddenWorldsPage({
   const [params, setParams] = useSearchParams();
   const editorId = params.get("creation");
   const [worldError,setWorldError]=useState(''),[worldReading,setWorldReading]=useState(false),[worldRetry,setWorldRetry]=useState(0);
-  useEffect(()=>{if(!editorId||!account.user||account.loading)return;let live=true;if(!/^[A-Za-z0-9_-]{1,100}$/.test(editorId)){setWorldError('Invalid world link.');return;}setWorldReading(true);setWorldError('');fetchWorld(editorId).then(()=>{if(live)setStored(loadWorlds());}).catch(e=>{if(live)setWorldError(e instanceof Error?e.message:'World data could not load. Saved data is preserved.');}).finally(()=>{if(live)setWorldReading(false);});return()=>{live=false;};},[editorId,account.user?.id,account.loading,worldRetry]);
-  const editorWorld = (account.user||author) && !account.loading ? stored.worlds.find((w) => w.id === editorId) : undefined;
+  const [hydratedWorld,setHydratedWorld]=useState<{id:string;epoch:number}|null>(null);
+  useEffect(()=>{
+    setWorldReading(false);setWorldError('');setHydratedWorld(null);
+    if(!editorId||!account.user||account.loading)return;
+    let live=true;
+    if(!/^[A-Za-z0-9_-]{1,100}$/.test(editorId)){setWorldError('Invalid world link.');return;}
+    setWorldReading(true);
+    fetchWorld(editorId).then(()=>{
+      if(live){setStored(loadWorlds());setHydratedWorld({id:editorId,epoch:account.epoch});}
+    }).catch(e=>{if(live)setWorldError(e instanceof Error?e.message:'World data could not load. Saved data is preserved.');})
+      .finally(()=>{if(live)setWorldReading(false);});
+    return()=>{live=false;};
+  },[editorId,account.user?.id,account.loading,account.epoch,worldRetry]);
+  const mediaReady=hydratedWorld?.id===editorId&&hydratedWorld.epoch===account.epoch;
+  const openingWorld=account.loading||worldReading||!!(account.user&&!mediaReady&&!worldError);
+  const editorWorld = (account.user?mediaReady:author) && !account.loading ? stored.worlds.find((w) => w.id === editorId) : undefined;
   function openWorld(world: CreatedWorld) {
     setPanel(null);
     setStored(loadWorlds());
@@ -350,9 +364,9 @@ export default function HiddenWorldsPage({
             : "Image could not load. Reload the page."}
         </p>
       )}
-      {editorId && !editorWorld && <div className="hidden-load-error" role={account.loading||worldReading?'status':'alert'}>
-        {account.loading||worldReading?'Opening your saved world…':account.error?'Account/world service is temporarily unavailable. Your saved world has not been deleted.':!account.user&&!author?'Sign in to open your saved world.':worldError||'This world is unavailable in this account or browser. No saved data was deleted.'}
-        {!account.loading&&!worldReading&&<><button onClick={()=>{if(account.error)void account.reload();else setWorldRetry(v=>v+1);}}>Retry world</button>{!account.user&&!author&&<Link to="/login">Log In</Link>}<button onClick={closeEditor}>Go back</button></>}
+      {editorId && !editorWorld && <div className="hidden-load-error" role={openingWorld?'status':'alert'}>
+        {openingWorld?'Opening your saved world…':account.error?'Account/world service is temporarily unavailable. Your saved world has not been deleted.':!account.user&&!author?'Sign in to open your saved world.':worldError||'This world is unavailable in this account or browser. No saved data was deleted.'}
+        {!openingWorld&&<><button onClick={()=>{if(account.error)void account.reload();else setWorldRetry(v=>v+1);}}>Retry world</button>{!account.user&&!author&&<Link to="/login">Log In</Link>}<button onClick={closeEditor}>Go back</button></>}
       </div>}
       {panel === "create" && (
         <CreateWorldModal

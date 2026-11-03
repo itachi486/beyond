@@ -8,7 +8,8 @@ export async function b10API(request,env,{validateWorld}={}){
  if(!/^\/api\/user\/native-(?:worlds|jobs)(?:\/|$)/.test(path))return null;
  if(env.BEYOND_STAGE!=='migration-preview'||env.BEYOND_B10_LOCAL_ENABLE!=='1')return memberResponse({error:'native_b10_not_activated'},503);
  try{
-  const p=policy(env),repo=new B10Repository(env.DB,{daily:String(p.daily),textDaily:String(p.textDaily),imageDaily:String(p.imageDaily),userImageLimit:p.userImage,media:env.MEDIA});
+  // Dormant B10 retains its separately reviewed count contract. Explicit Preview 'disabled' is not coerced into a numeric native policy; activation still needs review.
+  const p=policy({...env,AI_USER_DAILY_IMAGES:env.AI_USER_DAILY_IMAGES??'3'}),repo=new B10Repository(env.DB,{daily:String(p.daily),textDaily:String(p.textDaily),imageDaily:String(p.imageDaily),userImageLimit:p.userImage,media:env.MEDIA});
   if(!await repo.active())return memberResponse({error:'native_b10_not_activated'},503);
   const token=userToken(request,env);if(!/^[a-zA-Z0-9_-]{43}$/.test(token||''))return memberResponse({error:'sign_in_required'},401);
   const tokenHash=createHash('sha256').update(token).digest('hex'),session=await repo.one('SELECT user_id,csrf FROM user_sessions WHERE token_hash=?',tokenHash);

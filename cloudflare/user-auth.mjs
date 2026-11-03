@@ -1,10 +1,11 @@
+import {requestContext} from './context.mjs';
 import{randomBytes,randomUUID,createHash}from'node:crypto';
 import{normalizeEmail,validEmail,passwordPolicy,hashPassword,verifyPassword,findSession}from'../server/auth.mjs';
 const digest=v=>createHash('sha256').update(v).digest('hex'),random=()=>randomBytes(32).toString('base64url');
 export const userCookieName=env=>env.APP_ORIGIN?.startsWith('https://')?'__Host-beyond_user':'beyond_user';
 export function userToken(request,env){return(request.headers.get('cookie')||'').split(';').map(v=>v.trim()).find(v=>v.startsWith(userCookieName(env)+'='))?.split('=')[1];}
 export function findUserSession(db,request,env){const token=userToken(request,env);if(!/^[A-Za-z0-9_-]{43}$/.test(token||''))return null;return db.prepare("SELECT s.*,u.email,u.settings,u.verified_at,p.username FROM user_sessions s JOIN user_accounts u ON u.id=s.user_id LEFT JOIN member_profiles p ON p.user_id=u.id WHERE s.token_hash=? AND s.expires_at>? AND s.credential_version=u.credential_version AND COALESCE(p.status,'active')='active'").get(digest(token),Date.now())||null;}
-export function aiSession(db,request,env){const user=findUserSession(db,request,env);if(user)return{...user,admin_id:user.user_id,role:'member'};const admin=findSession(db,{headers:Object.fromEntries(request.headers)},true,Date.now(),env);return admin?{...admin,role:'admin'}:null;}
+export function aiSession(db,request,env){const user=findUserSession(db,request,env);if(user)return{...user,admin_id:user.user_id,role:'member'};const studio=requestContext.getStore()?.studioSession;if(studio)return studio;const admin=findSession(db,{headers:Object.fromEntries(request.headers)},true,Date.now(),env);return admin?{...admin,role:'admin'}:null;}
 const cookie=(value,env,age=30*86400)=>`${userCookieName(env)}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${env.APP_ORIGIN?.startsWith('https://')?'; Secure':''}`;
 export function memberResponse(data,status=200,setCookie){return Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer',...(setCookie?{'Set-Cookie':setCookie}:{})}});}
 const fail=(status,message)=>{throw Object.assign(Error(message),{status});};

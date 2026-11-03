@@ -54,3 +54,5 @@ export async function managedImagesAPI(request,db,env){
   }catch{try{await cleanup(row);}catch{}fail(503,'Upload did not complete. Refresh the gallery and retry any pending cleanup.');}
  }catch(e){if(e.status)return json({error:e.message},e.status);throw e;}
 }
+// Shared DTO for the lightweight read-only D1 route; never exposes private keys.
+export {dto as managedImageDTO};

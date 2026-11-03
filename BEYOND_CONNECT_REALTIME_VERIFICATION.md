@@ -4,7 +4,7 @@
 
 User attachment `54ef1ce1-a866-4e2f-b381-6f2527c98926/Pasted text.txt` is the implementation brief; the supplied numbers, avatars, names and example posts are artwork, not live data. Work started at `f8df80ba8d074fd67ca6694a2d73dd0450c98eba`, preserving the dirty tree, on feature branch `feature/connect-realtime-20261103`. No main modification/push, Production deployment, B10 activation, billing change, AI call, or existing image/object deletion.
 
-Baseline: `/tmp/beyond-social/baseline.json`, status-before and preservation.json. All 403 baseline files remain; only 12 pre-existing files related to this task changed. Existing unrelated dirty/untracked work remains. An alternate Git index selects HEAD plus only CONNECT hunks in the shared handler, HiddenWorldsPage and Preview config; existing administrator/AI/B10 changes are not swept into this commit. Selected source builds independently in `/tmp/beyond-social/git-review/source`.
+Baseline: `/tmp/beyond-social/baseline.json`, status-before and preservation.json. All 403 baseline files remain; only 12 pre-existing files related to this task changed. Existing unrelated dirty/untracked work remains. An alternate Git index selects HEAD plus only CONNECT hunks in the shared handler, HiddenWorldsPage and Preview config; existing administrator/AI/B10 implementation changes are not swept into this commit. The Preview config additionally preserves the already-active administrator principal flag, shared9000 budget and disabled per-account3-image limit; these known runtime settings must not regress to stale HEAD values when deploying CONNECT. Selected source builds independently in `/tmp/beyond-social/git-review/source-final`.
 
 ## Backgrounds and real UI
 
@@ -40,9 +40,11 @@ Reconnect uses an event cursor, paginated missed events, revision merge, stable 
 | TypeScript/build | PASS:`npm run build` includes tsc; full working tree and independently selected commit source both build. Existing >500kB chunk warning remains. |
 | Alternate all-files no-isolation experiment | NOT A PASS:41 registered tests cancelled with `Promise resolution is still pending but the event loop has already resolved`. The existing normal file-isolated runner above passed; do not combine counts or hide this harness incompatibility. |
 
+Repeated local signup runs also reached the existing authentication IP throttle (429). No authentication limit was weakened; fresh isolated fixtures and reusable QA credentials were used for the final passing run.
+
 Local visual evidence: `/tmp/beyond-social/local-feed-desktop.png`, `local-feed-tablet.png`, `local-feed-mobile.png`; Hub one/three/mobile in `/tmp/beyond-connect/`. Mobile width390 and tablet820 have no document horizontal overflow; Hub intentionally pans its artwork internally. Reduced-motion and animation failure preserve send delivery. IME guard exists; actual human IME/assistive technology and full international load tests remain NOT TESTED.
 
-Logs: `/tmp/beyond-social/` service-tests.log, connect-service-final.log, cloudflare-tests.log, cloudflare-detailed.log, frontend-final.log, server-tests.log, gallery-browser.log, local-browser-final.log, build-final.log, isolated-build.log.
+Logs: `/tmp/beyond-social/` service-tests.log, connect-service-final.log, cloudflare-tests.log, cloudflare-detailed.log, frontend-final.log, server-tests.log, gallery-browser.log, local-browser-final.log, build-final.log, isolated-build-final.log.
 
 ## Preview application and outstanding remote evidence
 
@@ -65,3 +67,18 @@ Rollback: preserve the export and additive schema/receipts/messages. Do not drop
 ## Delivery and follow-up
 
 Code and docs are prepared for feature branch only. Exact commit/push outcome is recorded below after the real Git operation. main and Production are excluded. Current remaining acceptance blockers are remote browser verification, post-deployment preservation comparison, and any network-blocked Git push. Local tests must not be called remote passes.
+
+
+### Final delivery state
+
+- Feature code commit: `e2d4c00cfa3563db72422dcc743cab3e62615e6d`.
+- Follow-up UI correction: `d65191b437497e9af7aaaabb5288de4a4c91910a`.
+- Final UI uses image-coordinate masks per baked example post, preserving the surrounding artwork at desktop/tablet/mobile ratios. Simultaneous send/receive particle instances are independent and bounded; text reveal240ms, travel500/550ms, reduced-motion skips effects. Final local browser run:3/3 PASS in17.0 seconds. Final independent source build PASS.
+- Selected commit source tests:24 CONNECT service tests and65 frontend tests/13 files PASS; these are a subset/overlap, not extra tests to add to the working-tree totals.
+- Last successful Preview deployment remains `7b16e328-bf97-4e35-a590-41940b4ad10e`. Later image-coordinate/individual-mask/independent-particle corrections are LOCAL ONLY: the final Preview deploy attempt failed with Wrangler `fetch failed` (exit1) before upload completion. Do not claim the deployed Preview contains these final UI corrections.
+- Push attempted with `git push origin HEAD:refs/heads/feature/connect-realtime-20261103`, without force. FAILED: `Could not resolve host: github.com`. Remote feature HEAD, current main and GitHub checks could not be re-read. No successful push is claimed.
+- The deployed working tree included previously preserved local work and is not identical to the isolated feature commits. Review remaining dirty work separately before any future source-based release; never assume this task commits unrelated AI/admin/B10 work.
+
+When network access returns: read current remote refs and Cloudflare versions/settings; verify only Preview resources/Free settings; deploy final checked UI to Preview; reuse known QA accounts or isolated new accounts; verify two real remote sockets, actual D1 history/edit/delete/reconnect, online counts, and protected-table hashes; then push the feature branch normally and inspect GitHub checks. Never use main or Production to work around this blocker.
+
+Platform design sources: [Free SQLite Durable Objects limits](https://developers.cloudflare.com/durable-objects/platform/limits/), [pricing and WebSocket billing](https://developers.cloudflare.com/durable-objects/platform/pricing/), [WebSocket Hibernation guidance](https://developers.cloudflare.com/durable-objects/best-practices/websockets/). Platform support is distinct from this session's blocked remote round-trip verification.

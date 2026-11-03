@@ -1,3 +1,7 @@
+## 2026-11-04 — Character identity/version/memory separation
+
+Approved and implemented: immutable administrator-defined central identities; independent server owner-character version assignments with explicit all/new-user publication scope; separate private owner-character relationship memory across worlds. Preserve central IDs, catalog/media versions, personal assets and original transcripts. Deleted/corrected memories fence older prompt context and queued extraction. Model/API/action paths retained. Source feature branch pushed; Preview activation not requested/applied. See BEYOND_CHARACTER_IDENTITY_MEMORY_VERIFICATION.md.
+
 
 ## 2026-10-31 UTC — Preview integrated error resolution (latest)
 

@@ -1,3 +1,7 @@
+## 2026-11-04 — Character identity/version/memory separation
+
+Approved and implemented: immutable administrator-defined central identities; independent server owner-character version assignments with explicit all/new-user publication scope; separate private owner-character relationship memory across worlds. Preserve central IDs, catalog/media versions, personal assets and original transcripts. Deleted/corrected memories fence older prompt context and queued extraction. Model/API/action paths retained. Source feature branch pushed; Preview activation not requested/applied. See BEYOND_CHARACTER_IDENTITY_MEMORY_VERIFICATION.md.
+
 ## 2026-10-30 — Companion uses existing state, explicit approval and real inference
 
 Reuse Workers AI/D1/Tigris/world progress and approved edit ledger; no new service/schema. Model wording cannot authorize editing: conservative intent boundary plus explicit preview review, no implicit undo. One static canvas, original immutable files, private snapshots, bounded authoritative history and saved location references. Exclude character biography from current-world geographic evidence. SourceAssetId transport solves inline413 without replacing originals. Actual house succeeds; garden/text narration/platform stability remain partial. Respect Free, budgets and auth rate limits; no fabricated AI success. See cloudflare/WORLD_COMPANION_VERIFICATION.md.

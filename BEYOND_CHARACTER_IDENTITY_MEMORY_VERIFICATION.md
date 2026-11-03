@@ -78,3 +78,24 @@ New core: `shared/character-identity.mjs`, `cloudflare/character-state.mjs`, `cl
 Started from feature/connect-realtime-20261103 HEAD4b44a60 with76 dirty tracked and89 untracked entries. New branch `feature/character-identity-memory-20261104`. To avoid committing the entire dirty workspace, an alternate Git index selected the feature and required pre-existing Companion/runtime dependencies. This includes the current semantic-planning/candidate/account-runtime foundation and necessary previous migration/test helpers. A narrow saved-world hydration prerequisite is selected from HiddenWorldsPage, while its unrelated plaza/gallery/close-navigation changes remain in the working tree. Unrelated files/notes/hosting configs are not swept into this commit; no reset/clean/rebase/discard. Review source exported at `/tmp/beyond-character-review-source` and tested independently. The feature commit contains runtime prerequisites as well as newly authored code; do not portray all selected dependency lines as newly invented for this task.
 
 Commit / feature push results are recorded in the delivery addendum after the actual Git operations. main merge and Production deployment are excluded. Preview deployment is not part of this request; migration/worker release requires a subsequent authorized Preview release, preserving budgets and all prior live data.
+
+## Delivery addendum
+
+- Source commit: `1b535076db618c35fa6ad497c0da890be3937f3e`.
+- Branch: `feature/character-identity-memory-20261104`.
+- Normal feature-only push SUCCEEDED to `https://github.com/itachi486/beyond.git`; no force, main merge or main push.
+- Actual selected source:61 files including the verification report, newly authored feature and required existing runtime prerequisites. Other working-tree files remain intentionally dirty; do not reset/clean them.
+- Source commit independently builds and its browser integration passes from the exported selection. Current full working-tree build also passes.
+- Preview migration/deployment NOT performed; existing remote schema inspected read-only only.
+
+### API surface
+
+- `GET /api/admin/library/characters/:id/identity`: immutable versions, active policy, comparison/owner impact metadata.
+- `POST .../identity/draft`: typed identity + operationId + policy revision + catalogVersion.
+- `POST .../identity/publish`: versionId + all/new scope + explicit confirmation + policy revision + operationId. Restore baseline/prior published version uses the same guarded publication operation.
+- `GET /api/user/characters/:id/memories`: authenticated owner's private facts only.
+- `PUT .../memories/:memoryId`: bounded correction/type/revision.
+- `DELETE .../memories/:memoryId` or root `.../memories`: confirmed individual/all forget, suppressions/context boundaries/epoch fences.
+- `POST .../memories/sync`: exact owned saved world ID/version; source text read from server transcript, optional background processing.
+
+All APIs require current existing authentication; writes require Origin/JSON/CSRF. No client identity/personality/owner or claimed memory content is trusted by the extraction pipeline.

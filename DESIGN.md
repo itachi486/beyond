@@ -1,3 +1,7 @@
+## 2026-11-04 — Character identity/version/memory separation
+
+Approved and implemented: immutable administrator-defined central identities; independent server owner-character version assignments with explicit all/new-user publication scope; separate private owner-character relationship memory across worlds. Preserve central IDs, catalog/media versions, personal assets and original transcripts. Deleted/corrected memories fence older prompt context and queued extraction. Model/API/action paths retained. Source feature branch pushed; Preview activation not requested/applied. See BEYOND_CHARACTER_IDENTITY_MEMORY_VERIFICATION.md.
+
 # Latest — hybrid personal-world exploration
 
 Personal Spirit-world Explore Mode reuses the existing clean `public/celestial-world.webp` (inspected against the supplied cosmic fantasy references). Three shared-texture shader planes provide distant artwork and soft-edged architectural depth crops; live Points stars, nebula sprites, haze, a painted-portal energy overlay and actual portal-character light rings add motion. UV crops are image layers, not newly modeled buildings or genuine transparent island cutouts. Scenery stays decorative; selectable targets come from saved graph IDs and relationships. The six-world reference selector remains unchanged.

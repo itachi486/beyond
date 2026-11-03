@@ -8,7 +8,7 @@ process.env.BEYOND_QA_CREDENTIALS ||= join(
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests",
-  testIgnore: ["**/member-accounts.spec.ts", "**/world-companion.spec.ts"], // Separate disposable Cloudflare adapter configuration.
+  testIgnore: ["**/social.spec.ts","**/member-accounts.spec.ts", "**/world-companion.spec.ts"], // Separate disposable Cloudflare adapter configuration.
   workers: 1,
   use: {
     baseURL: "http://127.0.0.1:5178",

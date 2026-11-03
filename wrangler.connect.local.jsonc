@@ -1,0 +1,12 @@
+{
+ "name":"beyond-connect-local-fixture",
+ "main":"tests/realtime-worker.mjs",
+ "compatibility_date":"2026-10-29",
+ "compatibility_flags":["nodejs_compat"],
+ "assets":{"directory":"./dist","binding":"ASSETS","not_found_handling":"single-page-application","run_worker_first":["/api","/api/*"]},
+ "d1_databases":[{"binding":"DB","database_name":"connect-local-fixture","database_id":"11111111-1111-4111-8111-111111111111"}],
+ "r2_buckets":[{"binding":"MEDIA","bucket_name":"connect-local-fixture"}],
+ "durable_objects":{"bindings":[{"name":"CONNECT_ROOMS","class_name":"ConnectRoom"}]},
+ "migrations":[{"tag":"connect-rooms-v1","new_sqlite_classes":["ConnectRoom"]}],
+ "vars":{"APP_ORIGIN":"http://127.0.0.1:5191","BEYOND_STAGE":"migration-preview","CONNECT_ENABLED":"1","CONNECT_REALTIME_ENABLED":"1","ADMIN_ALLOWED_EMAIL":"editor@example.test"}
+}

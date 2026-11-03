@@ -1,0 +1,20 @@
+import{createHash}from'node:crypto';
+import{userToken}from'./user-auth.mjs';import{adminAllowedEmail}from'../server/auth.mjs';import{studioEnabled,studioPrincipal}from'./admin-studio.mjs';import{connectCatalog}from'../shared/connect-catalog.mjs';
+export const memberSQL="SELECT s.*,u.id subject_id,u.settings,p.username FROM user_sessions s JOIN user_accounts u ON u.id=s.user_id LEFT JOIN member_profiles p ON p.user_id=u.id WHERE s.token_hash=? AND s.expires_at>? AND s.credential_version=u.credential_version AND COALESCE(p.status,'active')='active'";
+export const adminSQL='SELECT s.*,a.id subject_id FROM sessions s JOIN admins a ON a.id=s.admin_id WHERE s.token_hash=? AND s.expires_at>? AND a.email=? AND (SELECT COUNT(*) FROM admins)=1';
+export const socialFailure=(status,error)=>{throw Object.assign(Error(error),{status});};
+export const dbStatement=(env,sql,...p)=>env.DB.prepare(sql).bind(...p);
+export async function dbBatch(env,statements){const r=await env.DB.batch(statements);if(r.some(x=>!x.success))throw Error('social_storage_unavailable');return r;}
+export async function dbAll(env,sql,...p){return(await dbBatch(env,[dbStatement(env,sql,...p)]))[0].results;}
+export async function dbOne(env,sql,...p){return(await dbAll(env,sql,...p))[0];}
+const validToken=t=>/^[A-Za-z0-9_-]{43}$/.test(t||''),sha=t=>createHash('sha256').update(t).digest('hex');
+export function canonicalGroup(id){return connectCatalog.some(c=>c.groupId===id);}
+export function actorParams(actor){return[actor.sessionHash,Date.now(),...(actor.kind==='admin'?[actor.allowedEmail]:[])];}
+export const membershipSQL="SELECT 1 FROM connect_memberships m JOIN create_starter_selections s ON s.owner_id=m.owner_id JOIN connect_groups g ON g.starter_key=s.starter_key AND g.group_id=m.group_id AND g.starter_image_id=s.starter_image_id WHERE m.owner_id=? AND m.group_id=? AND m.active=1";
+function nameOf(auth,kind){let settings={};try{settings=JSON.parse(auth.settings||'{}');}catch{}return Array.from(String(kind==='admin'?'Administrator':settings.displayName||auth.username||'Member')).slice(0,120).join('');}
+export async function resolveConnectIdentity(request,env){let kind='member',token=userToken(request,env),params=validToken(token)?[sha(token),Date.now()]:[],auth=params.length?await dbOne(env,memberSQL,...params):null,authSQL=memberSQL;
+ if(!auth&&studioEnabled(env)){token=(request.headers.get('cookie')||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('__Host-beyond_admin='))?.slice(20);const allowed=adminAllowedEmail(env);if(allowed&&validToken(token)){params=[sha(token),Date.now(),allowed];auth=await dbOne(env,adminSQL,...params);if(auth){kind='admin';authSQL=adminSQL;}}}
+ if(!auth)return null;const owner=kind==='admin'?studioPrincipal(auth.subject_id):auth.subject_id;return{kind,params,auth,authSQL,owner,actor:{kind,owner,subjectId:auth.subject_id,sessionHash:params[0],...(kind==='admin'?{allowedEmail:params[2]}:{}),displayName:nameOf(auth,kind),expiresAt:auth.expires_at}};
+}
+export function accessGuard(actor,group){if(!canonicalGroup(group))socialFailure(403,'group_membership_required');return{sql:`EXISTS(${actor.kind==='admin'?adminSQL:memberSQL}) AND EXISTS(${membershipSQL}) AND (SELECT ready FROM cf_state WHERE id=1)=1`,params:[...actorParams(actor),actor.owner,group]};}
+export async function requireActor(env,actor,group){if(!actor||!['admin','member'].includes(actor.kind)||typeof actor.owner!=='string'||!canonicalGroup(group))socialFailure(403,'group_membership_required');if(actor.kind==='admin'&&actor.allowedEmail!==adminAllowedEmail(env))socialFailure(401,'sign_in_required');const auth=await dbOne(env,actor.kind==='admin'?adminSQL:memberSQL,...actorParams(actor));if(!auth) socialFailure(401,'session_expired');const owner=actor.kind==='admin'?studioPrincipal(auth.subject_id):auth.subject_id;if(owner!==actor.owner||auth.subject_id!==actor.subjectId)socialFailure(401,'session_expired');if(!await dbOne(env,membershipSQL,owner,group))socialFailure(403,'group_membership_required');return{...actor,displayName:nameOf(auth,actor.kind),expiresAt:auth.expires_at};}

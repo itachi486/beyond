@@ -33,7 +33,8 @@
     "AI_TEXT_DAILY_NEURONS": "8000",
     "AI_IMAGE_DAILY_NEURONS": "1000",
     "AI_USER_DAILY_IMAGES": "3",
-    "AI_WORLD_EDIT_MODEL": "@cf/black-forest-labs/flux-2-klein-4b"
+    "AI_WORLD_EDIT_MODEL": "@cf/black-forest-labs/flux-2-klein-4b",
+    "CONNECT_REALTIME_ENABLED": "1"
   },
   "rules": [
     {
@@ -51,5 +52,21 @@
     "crons": [
       "30 3 * * *"
     ]
-  }
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CONNECT_ROOMS",
+        "class_name": "ConnectRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "connect-rooms-v1",
+      "new_sqlite_classes": [
+        "ConnectRoom"
+      ]
+    }
+  ]
 }

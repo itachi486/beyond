@@ -1,3 +1,5 @@
+import{resolveConnectIdentity}from'./connect-access.mjs';
+import{connectCatalog}from'../shared/connect-catalog.mjs';
 import{createHash,randomUUID}from'node:crypto';
 import{userToken,verifyUserWrite,readUserJSON,memberResponse}from'./user-auth.mjs';
 import{adminAllowedEmail}from'../server/auth.mjs';
@@ -11,11 +13,9 @@ export async function connectAPI(request,env){
  const batch=async statements=>{const rows=await env.DB.batch(statements);if(rows.some(r=>!r.success))throw Error('connect_storage_unavailable');return rows;},statement=(sql,...p)=>env.DB.prepare(sql).bind(...p),all=async(sql,...p)=>(await batch([statement(sql,...p)]))[0].results,one=async(sql,...p)=>(await all(sql,...p))[0];
  try{
   if(!(await one('SELECT ready FROM cf_state WHERE id=1'))?.ready)fail(503,'connect_unavailable');
-  let kind='member',token=userToken(request,env),params=validToken(token)?[digest(token),Date.now()]:[],auth=params.length?await one(memberSQL,...params):null,authSQL=memberSQL;
-  if(!auth&&studioEnabled(env)){token=(request.headers.get('cookie')||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('__Host-beyond_admin='))?.slice(20);const allowed=adminAllowedEmail(env);if(allowed&&validToken(token)){params=[digest(token),Date.now(),allowed];auth=await one(adminSQL,...params);if(auth){kind='admin';authSQL=adminSQL;}}}
-  if(!auth)fail(401,'sign_in_required');
+  const identity=await resolveConnectIdentity(request,env);if(!identity)fail(401,'sign_in_required');const{kind,params,auth,authSQL}=identity;
   const owner=kind==='admin'?studioPrincipal(auth.subject_id):auth.subject_id,worldTable=kind==='admin'?'admin_personal_worlds':'user_worlds',fresh=()=>[params[0],Date.now(),...params.slice(2)],guard=(extra='1',extraParams=[])=>statement(`INSERT INTO cf_commit_guards(id,ok) VALUES(?,CASE WHEN EXISTS(${authSQL}) AND ${extra} THEN 1 ELSE 0 END)`,guardId,...fresh(),...extraParams),guardId='connect:'+randomUUID();
-  const catalog=async()=>all("SELECT g.*,i.version,i.data,i.status image_status,i.category image_category FROM connect_groups g LEFT JOIN managed_images i ON i.id=g.starter_image_id ORDER BY g.rowid");
+  const catalog=async()=>all("SELECT g.*,i.version,i.data,i.status image_status,i.category image_category FROM connect_groups g LEFT JOIN managed_images i ON i.id=g.starter_image_id WHERE g.starter_key IN('floating-islands','lost-island','endless-desert','deep-ocean','green-valley','alien-planet') ORDER BY g.rowid");
   const dto=r=>{const d=r.data?JSON.parse(r.data):null,available=!!(r.starter_image_id&&r.image_status==='ready'&&r.image_category==='hidden-worlds'&&d?.published&&d?.natureReviewed&&d?.file);return{key:r.starter_key,id:r.starter_image_id,groupId:r.group_id,name:r.display_name,available,previewUrl:available?`/api/public/images/${r.starter_image_id}/preview?version=${r.version}`:null};};
   const state=async()=>{
    const profile=await one('SELECT * FROM create_starter_profiles WHERE owner_id=?',owner),rows=await catalog();let selections;
@@ -45,7 +45,7 @@ export async function connectAPI(request,env){
    const selected=new Set(s.selections.map(r=>r.starter_key));return memberResponse({groups:s.catalog.filter(r=>selected.has(r.key)),sourceRevision:s.revision,requiresCreate:!selected.size});
   }
   const match=path.match(/^\/api\/connect\/groups\/([^/]+)$/);if(match&&request.method==='GET'){
-   const id=decodeURIComponent(match[1]),r=await one('SELECT g.* FROM connect_groups g JOIN connect_memberships m ON m.group_id=g.group_id JOIN create_starter_selections s ON s.starter_key=g.starter_key AND s.owner_id=m.owner_id WHERE m.owner_id=? AND m.group_id=? AND m.active=1',owner,id);if(!r)fail(403,'group_membership_required');return memberResponse({group:{id:r.group_id,key:r.starter_key,name:r.display_name},chatAvailable:false});
+   const id=decodeURIComponent(match[1]);if(!connectCatalog.some(c=>c.groupId===id))fail(403,'group_membership_required');const r=await one('SELECT g.* FROM connect_groups g JOIN connect_memberships m ON m.group_id=g.group_id JOIN create_starter_selections s ON s.starter_key=g.starter_key AND s.owner_id=m.owner_id WHERE m.owner_id=? AND m.group_id=? AND m.active=1',owner,id);if(!r)fail(403,'group_membership_required');return memberResponse({group:{id:r.group_id,key:r.starter_key,name:r.display_name},chatAvailable:env.CONNECT_REALTIME_ENABLED==='1'});
   }
   fail(404,'not_found');
  }catch(e){return memberResponse({error:e.status?e.message:'connect_temporarily_unavailable'},e.status||503);}

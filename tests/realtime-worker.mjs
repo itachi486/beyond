@@ -1,0 +1,4 @@
+// Local emulator entry: same router/DO with isolated local R2, never Tigris.
+import{cloudflareFetch}from'../cloudflare/handler.mjs';import{sqlRuntime}from'../cloudflare/runtime-sql.mjs';import{validWorld}from'../src/features/creation/worldStore.ts';
+export{ConnectRoom}from'../cloudflare/connect-room.mjs';
+export default{fetch(request,env){const binding=env.DB,DB={prepare:binding.prepare.bind(binding),async batch(statements){try{return await binding.batch(statements);}catch(e){console.warn('local_fixture_db_error',e.message);throw e;}}};return cloudflareFetch(request,{...env,DB},{loadSQL:async()=>{try{if(!globalThis.location)Object.defineProperty(globalThis,'location',{value:new URL(env.APP_ORIGIN),configurable:true});return await sqlRuntime();}catch(e){console.warn('local_fixture_sql_runtime_error',e.message);throw e;}},codecs:{},validateWorld:validWorld});}};

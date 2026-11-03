@@ -268,7 +268,7 @@ export default function HiddenWorldsPage({
         onExit={closeEditor}
       />
     );
-  if(params.get('connect')==='1')return <Suspense fallback={<p className="scene-loading">Opening CONNECT…</p>}><ConnectHub key={account.epoch+':'+(account.user?.id||'guest')} onBack={()=>{const next=new URLSearchParams(params);next.delete('connect');setParams(next);}} onCreate={()=>{const next=new URLSearchParams(params);next.delete('connect');setParams(next);setPanel('create');}}/></Suspense>;
+  if(params.get('connect')==='1')return <Suspense fallback={<p className="scene-loading">Opening CONNECT…</p>}><ConnectHub es={es} key={account.epoch+':'+(account.user?.id||'guest')} onBack={()=>{const next=new URLSearchParams(params);next.delete('connect');next.delete('connectGroup');setParams(next);}} onCreate={()=>{const next=new URLSearchParams(params);next.delete('connect');next.delete('connectGroup');setParams(next);setPanel('create');}}/></Suspense>;
   return (
     <section
       className={`hidden-world-page${overview ? " hidden-overview" : ""}`}

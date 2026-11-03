@@ -1,3 +1,4 @@
+export{ConnectRoom}from'./connect-room.mjs';
 import {cleanDueMembers} from './member-management.mjs';
 import {openD1Store} from './d1-store.mjs';
 import {validWorld} from "../src/features/creation/worldStore.ts";
